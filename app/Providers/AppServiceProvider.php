@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\Competition;
+use App\Models\CompetitionCategory;
 use App\Models\User;
+use App\Policies\Competition\CompetitionCategoryPolicy;
+use App\Policies\Competition\CompetitionPolicy;
 use App\Policies\Identity\UserPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -19,5 +23,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(Competition::class, CompetitionPolicy::class);
+        Gate::policy(CompetitionCategory::class, CompetitionCategoryPolicy::class);
     }
 }
