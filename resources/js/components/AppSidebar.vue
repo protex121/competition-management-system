@@ -5,13 +5,19 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Users } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Trophy, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage<SharedData>();
 
 const canManageUsers = computed(() => {
+    const role = page.props.auth.user?.role;
+
+    return role === 'organizer' || role === 'super-admin';
+});
+
+const canManageCompetitions = computed(() => {
     const role = page.props.auth.user?.role;
 
     return role === 'organizer' || role === 'super-admin';
@@ -31,6 +37,14 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: 'Users',
             href: route('users.index'),
             icon: Users,
+        });
+    }
+
+    if (canManageCompetitions.value) {
+        items.push({
+            title: 'Competitions',
+            href: route('competitions.index'),
+            icon: Trophy,
         });
     }
 

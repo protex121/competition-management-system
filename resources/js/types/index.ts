@@ -80,4 +80,50 @@ export interface PaginatedUsers<T> {
     };
 }
 
+export interface CompetitionCategory {
+    id: number;
+    name: string;
+    slug: string;
+    status: string;
+    is_default: boolean;
+    sort_order: number;
+}
+
+export interface Competition {
+    id: number;
+    name: string;
+    slug: string;
+    description: string | null;
+    status: string;
+    starts_at: string | null;
+    ends_at: string | null;
+    registration_starts_at: string | null;
+    registration_ends_at: string | null;
+    max_participants: number | null;
+    organization_id: number;
+    organization?: Organization | null;
+    categories?: CompetitionCategory[];
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CompetitionPermissions {
+    update: boolean;
+    delete: boolean;
+    publish: boolean;
+    activate: boolean;
+    close: boolean;
+}
+
+export interface PaginatedCompetitions<T> {
+    data: T[];
+    links: PaginationLink[];
+    meta?: {
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+    };
+}
+
 export type BreadcrumbItemType = BreadcrumbItem;

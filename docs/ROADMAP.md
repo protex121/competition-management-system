@@ -74,9 +74,8 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 - [x] `OrganizationScope` on `Competition`
 - [x] Auto-create default "General" category on competition create
 - [x] Inherit-with-override config on categories
-- [ ] CRUD for competitions and categories (org-scoped)
-- [x] Publish / activate / close workflow
-- [ ] Competition listing page (organizer view)
+- [ ] Category CRUD (nested under competition)
+- [x] Competition CRUD + listing page (organizer view)
 - [ ] Public competition page
 - [x] `CompetitionPolicy` + `CompetitionCategoryPolicy`
 - [x] `CompetitionPublished` event
