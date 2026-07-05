@@ -105,7 +105,9 @@ const organizationName = (organization: Organization | null | undefined): string
                                 size="sm"
                                 :variant="link.active ? 'default' : 'outline'"
                             >
-                                <Link :href="link.url" preserve-scroll v-html="link.label" />
+                                <Link :href="link.url" preserve-scroll>
+                                    <span v-html="link.label" />
+                                </Link>
                             </Button>
                             <span v-else class="px-2 text-muted-foreground" v-html="link.label" />
                         </template>

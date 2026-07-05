@@ -72,8 +72,8 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 - [x] `Competition` + `CompetitionCategory` models and migrations
 - [x] `CompetitionStatus` + `CategoryStatus` enums
 - [x] `OrganizationScope` on `Competition`
-- [ ] Auto-create default "General" category on competition create
-- [ ] Inherit-with-override config on categories
+- [x] Auto-create default "General" category on competition create
+- [x] Inherit-with-override config on categories
 - [ ] CRUD for competitions and categories (org-scoped)
 - [ ] Publish / activate / close workflow
 - [ ] Competition listing page (organizer view)
