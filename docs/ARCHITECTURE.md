@@ -62,7 +62,7 @@ app/
 │   ├── Middleware/              # EnsureUserIsActive, EnsureOrganizer
 │   └── Requests/{Module}/       # StoreUserRequest, UpdateUserRequest
 ├── Models/                      # flat: User, Organization
-│   └── Scopes/                  # (future) OrganizationScope
+│   └── Scopes/                  # OrganizationScope
 ├── Policies/{Module}/           # Identity/UserPolicy
 ├── Services/{Module}/           # Identity/CreateUserService, ...
 ├── Jobs/{Module}/               # (future)
@@ -147,7 +147,49 @@ graph TB
     User --> Org
 ```
 
-## 7. Frontend Architecture
+## 7. Competition module (Sprint 2 — foundation in progress)
+
+Full design: [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md).
+
+```mermaid
+graph TB
+    subgraph HTTP
+        CC[Competition/CompetitionController]
+        CatC[Competition/CategoryController]
+    end
+    subgraph Services
+        CCS[CreateCompetitionService]
+        PCS[PublishCompetitionService]
+        LCS[ListCompetitionsService]
+    end
+    subgraph AuthZ
+        CP[CompetitionPolicy]
+        CatP[CompetitionCategoryPolicy]
+        OS[OrganizationScope]
+    end
+    subgraph Models
+        Org[Organization]
+        Comp[Competition]
+        Cat[CompetitionCategory]
+    end
+
+    CC --> CCS
+    CC --> PCS
+    CC --> CP
+    CatC --> CatP
+    CCS --> Comp
+    CCS --> Cat
+    Comp --> Org
+    Cat --> Comp
+    OS --> Comp
+```
+
+- `Competition` is the aggregate root; categories nest under it.
+- `OrganizationScope` on `Competition` only — categories inherit tenancy via parent.
+- `CreateCompetitionService` auto-creates default **General** category in a transaction.
+- Status transitions (publish, activate, close) are explicit service actions.
+
+## 8. Frontend Architecture
 
 - **Inertia.js** bridges Laravel and Vue — no separate REST client for the web app; controllers return `Inertia::render(...)` with typed props.
 - **Vue 3 + `<script setup lang="ts">`**, TypeScript throughout.
@@ -155,20 +197,20 @@ graph TB
 - Shared types in `resources/js/types/` (e.g. `User`, `ManagedUser`, `PaginatedUsers`).
 - Server-provided `can` props drive conditional rendering of destructive actions.
 
-## 8. Background Work
+## 9. Background Work
 
 - **Redis** backs cache, session, and the queue.
 - Deferred/heavy work (leaderboard computation, exports, notifications) runs as **queued Jobs** (`ShouldQueue`), introduced from Sprint 2 onward.
 - Jobs calling external APIs set `$tries` and `$backoff`.
 
-## 9. Testing Strategy
+## 10. Testing Strategy
 
 - **Feature tests** (`tests/Feature/{Module}/`) exercise full HTTP flows including middleware, validation, and policies.
 - **Unit tests** (`tests/Unit/…`) cover isolated logic such as policy decisions.
 - `RefreshDatabase` for anything touching the DB; the database is never mocked in feature tests.
 - Multi-tenant isolation is asserted directly (an organizer cannot see or mutate another org's users).
 
-## 10. Deployment
+## 11. Deployment
 
 - **Local development:** `php artisan serve` + `npm run dev` (or `composer dev`). Docker is **not** used locally.
 - **Production:** Docker (`docker-compose.yml`, `docker/`) separates web, app, queue worker, and scheduler as distinct processes.
@@ -180,3 +222,4 @@ graph TB
 - [API_GUIDELINES.md](API_GUIDELINES.md) — request/response conventions
 - [DECISIONS.md](DECISIONS.md) — architectural decision records
 - [../PROJECT_RULES.md](../PROJECT_RULES.md) — coding standards
+- [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md) — Sprint 2 competition module design

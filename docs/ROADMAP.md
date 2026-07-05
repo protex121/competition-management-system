@@ -60,21 +60,29 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 
 ---
 
-## Sprint 2 — Competition Lifecycle
+## Sprint 2 — Competition & Category Management 🔄
 
-**Goal:** Organizers can create and manage competitions.
+**Goal:** Organizers create and manage competitions with multiple categories (tracks).
+
+**Domain research:** ✅ Complete — see [DECISIONS.md](DECISIONS.md) ADR-0011–0016.  
+**Design doc:** ✅ [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md)
 
 ### Features
 
-- [ ] `Competition` model (name, slug, description, status, dates)
-- [ ] `CompetitionStatus` enum (draft, published, active, closed)
-- [ ] CRUD for competitions (org-scoped)
-- [ ] Publish / close competition workflow
+- [x] `Competition` + `CompetitionCategory` models and migrations
+- [x] `CompetitionStatus` + `CategoryStatus` enums
+- [x] `OrganizationScope` on `Competition`
+- [ ] Auto-create default "General" category on competition create
+- [ ] Inherit-with-override config on categories
+- [ ] CRUD for competitions and categories (org-scoped)
+- [ ] Publish / activate / close workflow
 - [ ] Competition listing page (organizer view)
-- [ ] Public competition page (for participants)
-- [ ] `CompetitionPolicy`
+- [ ] Public competition page
+- [ ] `CompetitionPolicy` + `CompetitionCategoryPolicy`
 - [ ] `CompetitionPublished` event
 - [ ] Feature tests
+
+*When each item ships, this checklist and [DATABASE.md](DATABASE.md) are updated.*
 
 ---
 
@@ -165,6 +173,7 @@ Cross-cutting concerns tracked across sprints:
 |---|---|---|
 | Multi-tenant isolation proven by tests | Sprint 1 | ✅ |
 | First Service + Form Request + Policy pattern | Sprint 1 | ✅ |
+| Competition domain researched & documented | Sprint 2 | ✅ |
 | First Event + Job pipeline | Sprint 2 | ⏳ |
 | First Notification | Sprint 3 | ⏳ |
 | Queue worker processing real jobs | Sprint 6 | ⏳ |

@@ -143,13 +143,16 @@ resources/js/
 
 ## Documentation
 
-- [PROJECT_RULES.md](PROJECT_RULES.md) — coding standards and conventions
-- [docs/PRD.md](docs/PRD.md) — product requirements
-- [docs/ROADMAP.md](docs/ROADMAP.md) — sprint plan and feature timeline
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — system structure and request lifecycle
-- [docs/DATABASE.md](docs/DATABASE.md) — schema and relationships
-- [docs/API_GUIDELINES.md](docs/API_GUIDELINES.md) — request/response conventions
-- [docs/DECISIONS.md](docs/DECISIONS.md) — architectural decision records
+| Doc | What it covers |
+|---|---|
+| [PROJECT_RULES.md](PROJECT_RULES.md) | Coding standards for this repo |
+| [docs/PRD.md](docs/PRD.md) | Product requirements |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Sprint plan — updated when each sprint ships |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System structure and request flow |
+| [docs/DATABASE.md](docs/DATABASE.md) | Schema (migrations are source of truth) |
+| [docs/COMPETITION_DESIGN.md](docs/COMPETITION_DESIGN.md) | Sprint 2 competition module design |
+| [docs/API_GUIDELINES.md](docs/API_GUIDELINES.md) | Inertia conventions now; JSON API plan for later |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | Architectural decisions and trade-offs |
 
 ## Current Status
 
@@ -169,4 +172,9 @@ resources/js/
 - Profile, avatar upload, password update
 - 70 tests passing
 
-**Next: Sprint 2 — Competition Lifecycle**
+**Sprint 2 — In progress: Competition & Category Management**
+
+- Domain research complete (Competition vs Category, statuses, inherit-with-override)
+- Design doc: `docs/COMPETITION_DESIGN.md`
+- ADRs ADR-0011–0016 in `docs/DECISIONS.md`
+- Implementation: foundation shipped (migrations, models, enums, factories — Issue #4)
