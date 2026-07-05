@@ -75,11 +75,11 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 - [x] Auto-create default "General" category on competition create
 - [x] Inherit-with-override config on categories
 - [ ] CRUD for competitions and categories (org-scoped)
-- [ ] Publish / activate / close workflow
+- [x] Publish / activate / close workflow
 - [ ] Competition listing page (organizer view)
 - [ ] Public competition page
 - [x] `CompetitionPolicy` + `CompetitionCategoryPolicy`
-- [ ] `CompetitionPublished` event
+- [x] `CompetitionPublished` event
 - [ ] Feature tests
 
 *When each item ships, this checklist and [DATABASE.md](DATABASE.md) are updated.*
