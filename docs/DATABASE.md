@@ -16,13 +16,14 @@ This document describes the schema. It is kept in sync with the migrations in `d
 ```mermaid
 erDiagram
     ORGANIZATIONS ||--o{ USERS : "has many"
-    ORGANIZATIONS ||--o{ COMPETITIONS : "has many (planned)"
-    COMPETITIONS ||--o{ REGISTRATIONS : "planned"
+    ORGANIZATIONS ||--o{ COMPETITIONS : "has many"
+    COMPETITIONS ||--o{ COMPETITION_CATEGORIES : "has many"
+    COMPETITION_CATEGORIES ||--o{ REGISTRATIONS : "Sprint 3"
     COMPETITIONS ||--o{ SUBMISSIONS : "planned"
-    USERS ||--o{ REGISTRATIONS : "planned"
+    USERS ||--o{ REGISTRATIONS : "Sprint 3"
     USERS ||--o{ SUBMISSIONS : "planned"
     SUBMISSIONS ||--o{ SCORES : "planned"
-    USERS ||--o{ SCORES : "judges (planned)"
+    USERS ||--o{ SCORES : "judges, planned"
 ```
 
 ---
@@ -90,26 +91,46 @@ Extends the starter-kit users table with identity and tenancy columns.
 
 ---
 
-## Tables (planned)
+## Tables (Sprint 2 — implemented)
 
-These reflect the roadmap; columns are indicative and will be finalized when each sprint is designed.
+Full design: [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md).
 
-### `competitions` *(Sprint 2)*
+### `competitions`
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | bigint unsigned, PK | |
-| `organization_id` | FK → `organizations.id` | Tenant owner |
+| `organization_id` | FK → `organizations.id` | Tenant owner; cascade on delete |
 | `name` | string | |
-| `slug` | string | Unique per organization |
+| `slug` | string | Unique per org: `(organization_id, slug)` |
 | `description` | text, nullable | |
-| `status` | string | `CompetitionStatus` enum: draft/published/active/closed |
-| `starts_at` / `ends_at` | timestamp, nullable | |
-| timestamps + `deleted_at` | | |
+| `status` | string | `CompetitionStatus`: draft/published/active/closed |
+| `starts_at` / `ends_at` | timestamp, nullable | Event schedule |
+| `registration_starts_at` / `registration_ends_at` | timestamp, nullable | Default registration window |
+| `max_participants` | unsigned int, nullable | Optional global capacity |
+| timestamps + `deleted_at` | | Soft delete |
+
+### `competition_categories`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint unsigned, PK | |
+| `competition_id` | FK → `competitions.id` | Cascade on delete |
+| `name` | string | |
+| `slug` | string | Unique per competition: `(competition_id, slug)` |
+| `description` | text, nullable | Override; null = inherit |
+| `status` | string | `CategoryStatus`: draft/active/disabled/archived |
+| `sort_order` | unsigned small int | Display order; default 0 |
+| `max_participants` | unsigned int, nullable | Override capacity |
+| `registration_ends_at` | timestamp, nullable | Override reg deadline |
+| `is_default` | boolean | `true` for auto-created General |
+| timestamps + `deleted_at` | | Soft delete |
+
+### Other planned tables
 
 ### `registrations` *(Sprint 3)*
 
-Links a user (or team) to a competition, with a status and deadline/capacity enforcement.
+Links a user (or team) to a **competition category**, with status and deadline/capacity enforcement.
 
 ### `teams` *(Sprint 3)*
 
@@ -138,6 +159,8 @@ A judge's score for a submission against a criterion; a judge cannot score their
 | `0001_01_01_000002_create_jobs_table` | `jobs`, `job_batches`, `failed_jobs` |
 | `2026_07_03_000001_create_organizations_table` | `organizations` |
 | `2026_07_03_000002_add_identity_columns_to_users_table` | Adds tenancy/identity columns to `users` |
+| `2026_07_05_000001_create_competitions_table` | `competitions` |
+| `2026_07_05_000002_create_competition_categories_table` | `competition_categories` |
 
 ## Seed Data
 
@@ -153,4 +176,5 @@ Run with `php artisan migrate --seed`. These are local development credentials o
 ## Related Documents
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — how tenancy and scoping work
-- [DECISIONS.md](DECISIONS.md) — why per-tenant email uniqueness and enum-based roles
+- [DECISIONS.md](DECISIONS.md) — architectural decision records
+- [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md) — Sprint 2 competition module design

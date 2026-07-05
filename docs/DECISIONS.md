@@ -96,6 +96,60 @@ This log captures significant decisions, their context, and their consequences. 
 
 ---
 
+## ADR-0011 — Competition and Category as separate entities
+
+- **Status:** Accepted
+- **Context:** Sprint 2 domain research. One hackathon event often has multiple tracks. Future modules (Registration, Payment, Judge, Certificate) need a stable track identity.
+- **Decision:** Model **Competition** as the org-owned event container (aggregate root) and **CompetitionCategory** as a child track within one competition. Categories are not global across competitions.
+- **Consequences:** Registration and related modules attach to `category_id`. Slightly more complex CRUD than a flat competition model, but avoids duplicating entire events per track.
+
+---
+
+## ADR-0012 — Category configuration inherits from Competition with nullable overrides
+
+- **Status:** Accepted
+- **Context:** Tracks share most event settings but may differ in capacity, deadlines, or description.
+- **Decision:** Competition stores defaults (`starts_at`, `ends_at`, `registration_*`, `max_participants`). Category stores nullable override columns; `null` means inherit from the parent competition.
+- **Consequences:** No duplicated config across categories. A resolver for "effective" values is deferred until Registration/Payment modules require it.
+
+---
+
+## ADR-0013 — Four competition statuses; manual transitions
+
+- **Status:** Accepted
+- **Context:** Need a clear event lifecycle without premature sub-phases.
+- **Decision:** `CompetitionStatus`: `draft`, `published`, `active`, `closed`. Transitions are explicit service actions (publish, activate, close), not automatic cron jobs in Sprint 2.
+- **Consequences:** Simple state machine. Sub-statuses (`registration_open`, `judging_open`) are deferred until those modules exist.
+
+---
+
+## ADR-0014 — Separate category status lifecycle
+
+- **Status:** Accepted
+- **Context:** Categories need enable/disable independent of the competition state machine complexity.
+- **Decision:** `CategoryStatus`: `draft`, `active`, `disabled`, `archived`. A category is only operationally open when its status is `active` **and** the parent competition is `published` or `active`.
+- **Consequences:** Organizers can disable individual tracks without closing the entire event.
+
+---
+
+## ADR-0015 — Auto-create default "General" category on competition create
+
+- **Status:** Accepted
+- **Context:** Every published competition must have at least one category. Requiring manual category creation adds friction and risks empty events.
+- **Decision:** `CreateCompetitionService` creates a default category (`name: General`, `slug: general`, `is_default: true`, `status: draft`) in the same transaction as the competition.
+- **Consequences:** Guaranteed minimum structure. Default category cannot be deleted (policy/service guard); it may be renamed.
+
+---
+
+## ADR-0016 — OrganizationScope on Competition; Category scoped via parent
+
+- **Status:** Accepted
+- **Context:** Sprint 2 introduces the first competition-domain models. Tenant isolation must be consistent with Sprint 1 patterns.
+- **Decision:** Apply `OrganizationScope` global scope to `Competition`. `CompetitionCategory` has no `organization_id`; isolation is enforced by resolving the parent competition and checking `organization_id` in policies/services.
+- **Consequences:** No redundant `organization_id` on categories. Category queries for admin UIs always go through `competition_id` or eager-loaded competition.
+
+---
+
 ## Superseded / historical notes
 
 - Early roadmap drafts assumed `spatie/laravel-permission` and invite-only registration for Sprint 1. Both were changed before implementation: roles are a PHP enum (ADR-0006) and self-serve organization signup is enabled (see [ROADMAP.md](ROADMAP.md)). Invite flow is deferred.

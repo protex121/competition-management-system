@@ -24,4 +24,9 @@ class Organization extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    public function competitions(): HasMany
+    {
+        return $this->hasMany(Competition::class);
+    }
 }

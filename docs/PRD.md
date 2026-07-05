@@ -57,14 +57,40 @@ Organizers of hackathons and event-style competitions currently juggle spreadshe
 - Deactivated users cannot authenticate; active session is invalidated on next request.
 - Business rules: cannot remove yourself, cannot remove the last organizer, `super-admin` role is not assignable through the UI.
 
-### 6.2 Competition Lifecycle (planned)
+### 6.2 Competition & Category Management (Sprint 2 — planned)
 
-- Organizers create competitions with a status workflow: `draft → published → active → closed`.
-- Public competition pages for participants.
+A **Competition** is an org-owned event container. A **Competition Category** is a track/division within that event (e.g. Student Track, Professional Track). Future modules (Registration, Payment, Judge) attach primarily to Category.
+
+**Competition — functional requirements:**
+
+- Organizers create and manage competitions scoped to their organization.
+- Status workflow: `draft → published → active → closed` (manual transitions in Sprint 2).
+- Competition holds event-wide defaults: name, slug, description, schedule, optional global capacity and registration window.
+- Slug unique per organization.
+- Soft delete supported; draft competitions may be deleted.
+- Public read-only page when status is `published`, `active`, or `closed`.
+
+**Category — functional requirements:**
+
+- Every competition has at least one category; creating a competition auto-creates a default **General** category (`slug: general`, `is_default: true`).
+- Organizers add, edit, disable, and soft-delete non-default categories.
+- Category status: `draft`, `active`, `disabled`, `archived`.
+- Category holds nullable overrides (capacity, registration deadline, description) — null means inherit from competition.
+- Slug unique per competition.
+- Default category cannot be deleted (may be renamed).
+
+**Cross-cutting rules:**
+
+- Category `active` is meaningful only when parent competition is `published` or `active`.
+- Closing a competition stops new activity on all categories.
+- Only organizers (and super admin) manage competitions/categories; participants view public pages only.
+- Sub-statuses (`registration_open`, `judging_open`) deferred until those modules exist.
+
+Design detail: [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md). Decisions: [DECISIONS.md](DECISIONS.md) ADR-0011–0016.
 
 ### 6.3 Registration & Teams (planned)
 
-- Participants register solo or as teams, subject to deadlines and capacity limits.
+- Participants register **to a category** (solo or team), subject to deadlines and capacity limits.
 
 ### 6.4 Submissions (planned)
 
@@ -101,3 +127,4 @@ Organizers of hackathons and event-style competitions currently juggle spreadshe
 - [DATABASE.md](DATABASE.md) — schema and relationships
 - [API_GUIDELINES.md](API_GUIDELINES.md) — request/response conventions
 - [DECISIONS.md](DECISIONS.md) — architectural decision records
+- [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md) — Sprint 2 competition module design
