@@ -78,7 +78,7 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 - [ ] Publish / activate / close workflow
 - [ ] Competition listing page (organizer view)
 - [ ] Public competition page
-- [ ] `CompetitionPolicy` + `CompetitionCategoryPolicy`
+- [x] `CompetitionPolicy` + `CompetitionCategoryPolicy`
 - [ ] `CompetitionPublished` event
 - [ ] Feature tests
 
