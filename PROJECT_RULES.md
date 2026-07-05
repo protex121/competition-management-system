@@ -1,18 +1,14 @@
-# Project Rules — Competition Management System
+# Project Rules
 
-Engineering standards for this project. Follow these when writing new code.
+Coding standards for this repo. These reflect patterns already in use — not aspirational guidelines. If something here conflicts with the code, the code wins and this doc gets updated.
 
-## Architecture
+Full architecture context: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-- **Modular Monolith** — organize by domain module, not technical layer
-- **Default layers:** Controllers, Form Requests, Services, Jobs, Notifications, Policies, Models
-- **Actions** — only when a single-purpose command provides real value (`app/Actions/{Module}/`)
-- **No Repository Pattern** unless there is a strong architectural reason
-- **Prefer Laravel conventions** over custom abstractions
+---
 
-## Folder Structure
+## Structure
 
-Module subfolders inside each layer:
+Modular monolith. Group by domain module, not by layer:
 
 ```
 app/Http/Controllers/{Module}/
@@ -21,133 +17,172 @@ app/Services/{Module}/
 app/Policies/{Module}/
 app/Jobs/{Module}/
 app/Events/{Module}/
-app/Listeners/{Module}/
 app/Notifications/{Module}/
 ```
 
-Models stay flat at `app/Models/`. Enums at `app/Enums/`. Scopes at `app/Models/Scopes/`.
+Models live flat at `app/Models/`. Enums at `app/Enums/`. Scopes at `app/Models/Scopes/`.
 
-Frontend pages mirror backend modules: `resources/js/pages/{module}/`.
+Frontend mirrors backend: `resources/js/pages/{module}/`.
 
-## PHP Standards
+No repository pattern unless there's a concrete reason. No action classes unless a single-purpose command genuinely helps — services are the default.
 
-- Add `declare(strict_types=1);` to every new PHP file
-- Use constructor property promotion
-- Typed properties, parameters, and return types everywhere
-- Use `readonly` for immutable properties
-- Never call `env()` outside `config/` files — use `config('key')`
+---
+
+## PHP
+
+- `declare(strict_types=1);` on every new file
+- Constructor property promotion, typed everything
+- `readonly` where it makes sense
+- `env()` only in config files — use `config()` elsewhere
 - Run `./vendor/bin/pint` before committing
+
+---
 
 ## Controllers
 
-Controllers do four things only:
+Four jobs:
 
-1. Receive request (via Form Request)
-2. Authorize (via Policy)
-3. Delegate to Service
-4. Return response (Inertia or redirect)
+1. Receive (Form Request)
+2. Authorize (Policy)
+3. Delegate (Service)
+4. Respond (Inertia or redirect)
 
-If a controller method exceeds ~15 lines, logic has leaked in.
+~15 lines per method. If it's longer, something leaked.
 
-**Exception:** Starter kit auth controllers are left as-is until we need to change their behavior.
+**Exception:** starter kit auth controllers stay as-is until a behavior change is required.
+
+Base `Controller` includes `AuthorizesRequests` so `$this->authorize()` works everywhere.
+
+---
 
 ## Services
 
-- Own business logic orchestration
-- Stateless — no request/session assumptions
-- Receive explicit inputs (`User $creator`, not `auth()->user()`)
-- Return domain objects, never HTTP responses
-- Naming: `{Verb}{Noun}Service` (e.g. `CreateCompetitionService`)
+- Own the business logic
+- Stateless — pass the actor explicitly (`User $actor`), don't call `auth()` inside
+- Return domain objects, not HTTP responses
+- Name: `{Verb}{Noun}Service` — `CreateUserService`, `DeactivateUserService`
+
+Sensitive fields like `deactivated_at` are set directly on the model in the service, not via mass assignment.
+
+---
 
 ## Validation
 
-- Form Request classes for all user input — no inline `$request->validate()`
-- Location: `app/Http/Requests/{Module}/{Action}{Model}Request.php`
-- Custom reusable rules: `app/Rules/`
+Form Requests for all user input. No inline `$request->validate()`.
+
+Path: `app/Http/Requests/{Module}/{Action}{Model}Request.php`
+
+Reusable rules go in `app/Rules/`.
+
+---
 
 ## Authorization
 
-- **Authentication** = who are you (handled by starter kit)
-- **Authorization** = what can you do (Policies)
-- Policies at `app/Policies/{Module}/{Model}Policy.php`
-- Tenant isolation via global scope (`OrganizationScope`) — never manual `where('organization_id')` in controllers
+- Auth (who you are) → starter kit
+- Authz (what you can do) → Policies at `app/Policies/{Module}/{Model}Policy.php`
+
+Tenant isolation: services and policies check `organization_id`. Global `OrganizationScope` is planned for competition models (Sprint 2+) — not on `User`.
+
+Role checks don't belong in controllers.
+
+---
 
 ## Models
 
-- Always define `$fillable` — never use `$guarded = []`
-- Use `casts()` method for attribute casting
-- Apply `OrganizationScope` on all tenant-scoped models (Sprint 1+)
-- Factories required for every model used in tests
+- Always `$fillable` — never `$guarded = []`
+- `casts()` method for attribute casting
+- Factory for every model used in tests
+- `$appends` sparingly (e.g. `avatar_url` accessor)
+
+---
 
 ## Database
 
-Before creating migrations, document:
+Before writing a migration, document:
 
-- Purpose, columns, indexes, foreign keys, relationships
-- No unnecessary nullable columns
-- Prefer explicit constraints
-- Unique constraints scoped per tenant where applicable
+- Purpose, indexes, foreign keys, relationships
+- Avoid nullable columns "just in case"
+- Scope unique constraints per tenant where relevant
+
+New tables are documented in [docs/DATABASE.md](docs/DATABASE.md) when their sprint ships.
+
+---
 
 ## Events & Jobs
 
-- Events: past-tense domain facts (`CompetitionPublished`)
-- Jobs: imperative commands (`CalculateLeaderboardJob`)
-- Jobs must receive `organizationId` explicitly — never read from session
-- Implement `ShouldQueue` with `$tries` and `$backoff` for external API calls
+- Events: past tense — `CompetitionPublished`
+- Jobs: imperative — `CalculateLeaderboardJob`
+- Jobs get `organizationId` in the constructor, never from session
+- `ShouldQueue` + `$tries` + `$backoff` for anything hitting external APIs
+
+---
 
 ## Frontend
 
-- Vue 3 Composition API with `<script setup lang="ts">`
-- TypeScript for all new frontend code
-- Reusable components in `resources/js/components/`
-- Domain components in `resources/js/components/{Module}/`
-- Shared types in `resources/js/types/`
-- Follow kit's lowercase page folder convention: `pages/competition/`
+- Vue 3, `<script setup lang="ts">`, TypeScript
+- Shared components in `resources/js/components/`
+- Module-specific components in `resources/js/components/{Module}/`
+- Types in `resources/js/types/`
+- Page folders lowercase: `pages/identity/users/`
 
-## Security
+Use server-provided `can` props for conditional UI. Frontend-only checks are not sufficient for security.
 
-Always consider:
+---
 
-- Authorization before any data access
-- Mass assignment protection (`$fillable`)
-- CSRF (handled by Inertia)
-- File upload validation
-- Rate limiting on sensitive endpoints
-- No secrets in git (`.env` only locally)
+## Security checklist
+
+- Policy before data access
+- `$fillable` strict — sensitive fields set in services
+- CSRF handled by Inertia
+- Validate file uploads (type, size, dimensions)
+- Rate limit auth endpoints
+- No secrets in git
+
+---
 
 ## Testing
 
-- Feature tests for HTTP/integration flows (`tests/Feature/{Module}/`)
-- Unit tests for isolated business logic (`tests/Unit/Services/{Module}/`)
-- Use `RefreshDatabase` for tests that write to the DB
-- Never mock the database in feature tests
+- Feature tests: `tests/Feature/{Module}/` — full HTTP, real DB, `RefreshDatabase`
+- Unit tests: policies, pure service logic
+- The database is not mocked in feature tests
+- Tenant isolation is tested explicitly
+
+---
 
 ## Dependencies
 
-Add packages only when they solve a real problem:
+Add a package only when the pain is real:
 
-| Approved (when needed) | Avoid (until pain is felt) |
+| OK when needed | Skip for now |
 |---|---|
-| `spatie/laravel-permission` | Repository pattern packages |
-| `pestphp/pest` (optional) | `nwidart/laravel-modules` |
-| `larastan/larastan` (optional) | `stancl/tenancy` |
-| | UI component libraries beyond shadcn-vue |
-| | State management (Pinia/Vuex) |
+| `spatie/laravel-permission` | Repository packages |
+| `pestphp/pest` | `nwidart/laravel-modules` |
+| `larastan/larastan` | `stancl/tenancy` |
+| | Pinia / Vuex |
+| | Extra UI libraries beyond shadcn-vue |
 
-## Commit Messages
+---
 
-Conventional Commits format:
+## Commits
+
+Conventional Commits:
 
 ```
-feat(scope): short description
-fix(scope): short description
-chore(scope): short description
+feat(identity): add user deactivation
+fix(auth): scope login to workspace slug
+chore(docs): update roadmap for sprint 1
 ```
 
-Use imperative mood. One logical change per commit.
+Imperative mood. One logical change per commit.
 
-## Development Environment
+---
 
-- Local dev: `php artisan serve` + `npm run dev` (or `composer dev`)
-- Docker: deployment only, not for local development
-- Drivers: MySQL + Redis from day one (no SQLite for dev)
+## Dev environment
+
+- Local: `composer dev` (serve + Vite + queue + logs)
+- DB: MySQL. Cache/session/queue: Redis. Not SQLite for dev.
+- Docker: deployment only — see `docker-compose.yml`
+
+---
+
+*Updated when conventions change. See [docs/DECISIONS.md](docs/DECISIONS.md) for the reasoning behind these rules.*

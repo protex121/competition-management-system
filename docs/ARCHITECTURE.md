@@ -1,14 +1,22 @@
-# Architecture — Competition Management System
+# Architecture
 
-This document explains **how the system is structured** and **why**. Coding conventions live in [../PROJECT_RULES.md](../PROJECT_RULES.md); this document covers the higher-level shape.
+How the app is put together. For day-to-day coding rules, see [../PROJECT_RULES.md](../PROJECT_RULES.md).
 
-## 1. Architectural Style
+---
 
-A **modular monolith**: one deployable Laravel application, organized by **domain module** rather than by technical layer. Each module owns its controllers, requests, services, policies, and tests under a consistent folder convention.
+## Modular monolith
 
-**Why a monolith?** The domain is cohesive and the team is small. Microservices would add operational overhead without a corresponding benefit. Clear module boundaries keep the option open to extract a service later if a real need appears.
+One Laravel app, organized by **domain module** (Identity, Competition, etc.) rather than dumping everything in generic `Controllers/` and `Services/` folders.
 
-## 2. Request Lifecycle
+A monolith was chosen because the domain is cohesive and the team is small. Microservices would add overhead with no payoff at this scale. Module boundaries are clear enough that extracting a service later remains an option if needed.
+
+## Request flow
+
+Every web request follows the same path:
+
+```
+Browser → Middleware → Controller → Form Request → Policy → Service → Model → Inertia
+```
 
 ```mermaid
 sequenceDiagram
@@ -36,73 +44,79 @@ sequenceDiagram
     Inertia-->>Browser: page props
 ```
 
-## 3. Layer Responsibilities
+### What each layer does
 
-| Layer | Responsibility | Rule of thumb |
+| Layer | Job | Don't put here |
 |---|---|---|
-| **Middleware** | Cross-cutting gates (auth, active account, role) | No business logic |
-| **Controller** | Receive → authorize → delegate → respond | ≤ ~15 lines per action |
-| **Form Request** | Validation + `authorize()` hook (calls Policy) | No side effects |
-| **Policy** | Authorization decisions | Pure functions on `(actor, target)` |
-| **Service** | Business logic orchestration | Stateless; explicit inputs; returns domain objects |
-| **Model** | Persistence + relationships + casts | `$fillable`, `casts()`, scopes |
-| **Event / Listener / Job** | Async & cross-cutting side effects | Jobs receive `organizationId` explicitly |
+| Middleware | Gates: auth, active account, role | Business logic |
+| Controller | Receive → authorize → delegate → respond | Role checks, DB queries |
+| Form Request | Validation + `authorize()` | Side effects |
+| Policy | Can this user do this to that resource? | Workflow logic |
+| Service | Business orchestration | HTTP concerns |
+| Model | Persistence, relationships, casts | Authorization |
+| Job / Event | Async side effects | Session reads |
 
-**Golden rule:** controllers never contain role checks or business logic. Authorization lives in Policies; workflows live in Services.
+**Rule of thumb:** controllers should stay around 15 lines. If they're longer, logic has leaked in.
 
-## 4. Folder Structure
-
-Modules are subfolders inside each layer, keeping every artifact discoverable from its module name.
+## Folder layout
 
 ```
 app/
-├── Enums/                       # UserRole, (future) CompetitionStatus
+├── Enums/                    # UserRole, CompetitionStatus (later)
 ├── Http/
-│   ├── Controllers/{Module}/    # e.g. Identity/UserController
-│   ├── Middleware/              # EnsureUserIsActive, EnsureOrganizer
-│   └── Requests/{Module}/       # StoreUserRequest, UpdateUserRequest
-├── Models/                      # flat: User, Organization
-│   └── Scopes/                  # (future) OrganizationScope
-├── Policies/{Module}/           # Identity/UserPolicy
-├── Services/{Module}/           # Identity/CreateUserService, ...
-├── Jobs/{Module}/               # (future)
-├── Events/{Module}/             # (future)
-├── Listeners/{Module}/          # (future)
-└── Notifications/{Module}/      # (future)
+│   ├── Controllers/{Module}/
+│   ├── Middleware/
+│   └── Requests/{Module}/
+├── Models/                   # flat — User, Organization, Competition...
+│   └── Scopes/               # OrganizationScope (Sprint 2+)
+├── Policies/{Module}/
+├── Services/{Module}/
+├── Jobs/{Module}/              # Sprint 2+
+├── Events/{Module}/
+└── Notifications/{Module}/
 
 resources/js/
-├── pages/{module}/              # pages/identity/users/{Index,Create,Edit}.vue
-├── components/                  # shared + ui/ (shadcn-vue)
-├── layouts/
-└── types/                       # shared TypeScript types
+├── pages/{module}/           # mirrors backend: identity/users/Index.vue
+├── components/
+└── types/
 ```
 
-Frontend pages mirror backend modules (`pages/identity/…` ↔ `Controllers/Identity/…`).
+If you know the module name, you can find every related file without a search.
 
-## 5. Multi-Tenancy
+## Multi-tenancy
 
-- **Model:** row-level, shared database. Tenant-owned rows carry `organization_id`.
-- **Users:** belong to exactly one organization; super admins have `organization_id = null`.
-- **Scoping today:** tenant-scoped listings filter by `organization_id` inside services (e.g. `ListUsersService`). Super admins bypass the filter.
-- **Scoping later:** an `OrganizationScope` global scope will be introduced for competition-domain models (Sprint 2+). It will **not** be applied globally to `User`, because authentication and super-admin queries must see across organizations.
-- **Jobs:** must receive `organizationId` explicitly in their constructor — never read tenant context from the session.
+Row-level, shared DB. Tenant-owned rows get an `organization_id`.
 
-See [DECISIONS.md](DECISIONS.md) for the reasoning behind these choices.
+**Current approach (Sprint 1):** services filter by org explicitly. Example: `ListUsersService` scopes to the actor's org; super admins skip the filter.
 
-## 6. Authentication & Authorization
+**Planned (Sprint 2+):** `OrganizationScope` global scope on competition-domain models. Intentionally **not** on `User` — login and super-admin queries need to see across orgs.
 
-### Authentication (who you are)
+**Jobs:** always pass `organizationId` in the constructor. Never read tenant from session inside a job.
 
-- Provided by the Laravel Vue starter kit (controller-based, Breeze-style).
-- Login is **workspace-scoped**: the form takes an `organization_slug`, an email, and a password. The slug resolves the organization, and credentials are matched within it.
-- The reserved slug `platform` routes to super-admin authentication (`organization_id = null`, role `super-admin`).
-- `EnsureUserIsActive` logs out and invalidates the session of any user whose `deactivated_at` is set.
+## Auth
 
-### Authorization (what you can do)
+### Who you are (authentication)
 
-- Enforced by **Policies**, invoked from Form Requests (`authorize()`) and controllers (`$this->authorize()`).
-- `UserPolicy` encodes rules such as: cannot act on yourself for destructive actions, cannot remove the last organizer, `super-admin` role cannot be assigned through the UI, cross-tenant actions are denied.
-- Frontend conditionally hides UI (e.g. the Users nav item) based on role — but **UI hiding is not security**; the backend Policy is the real gate.
+Starter kit handles this (controller-based, Breeze-style). Login was changed to be workspace-scoped.
+
+The form sends `organization_slug` + email + password. The slug resolves the org; credentials are matched within it. Reserved slug `platform` → super admin auth.
+
+`EnsureUserIsActive` middleware logs out anyone with `deactivated_at` set and kills their session.
+
+### What you can do (authorization)
+
+Policies, always. Form Requests call `authorize()`; controllers call `$this->authorize()` where needed.
+
+`UserPolicy` covers the edge cases encountered during Sprint 1:
+
+- Can't deactivate/delete yourself
+- Can't delete the last organizer in an org
+- Can't assign `super-admin` through user management
+- Cross-org access denied
+
+The frontend hides nav items based on role (e.g. Users link only for organizers), but that's UX — the policy is the real gate.
+
+## Identity module (what exists today)
 
 ```mermaid
 graph TB
@@ -147,36 +161,32 @@ graph TB
     User --> Org
 ```
 
-## 7. Frontend Architecture
+Competition module will follow the same shape when Sprint 2 lands.
 
-- **Inertia.js** bridges Laravel and Vue — no separate REST client for the web app; controllers return `Inertia::render(...)` with typed props.
-- **Vue 3 + `<script setup lang="ts">`**, TypeScript throughout.
-- **shadcn-vue (radix-vue)** primitives under `resources/js/components/ui/`.
-- Shared types in `resources/js/types/` (e.g. `User`, `ManagedUser`, `PaginatedUsers`).
-- Server-provided `can` props drive conditional rendering of destructive actions.
+## Frontend
 
-## 8. Background Work
+Inertia + Vue 3 + TypeScript. No separate REST client for the web app — controllers return `Inertia::render()` with props.
 
-- **Redis** backs cache, session, and the queue.
-- Deferred/heavy work (leaderboard computation, exports, notifications) runs as **queued Jobs** (`ShouldQueue`), introduced from Sprint 2 onward.
-- Jobs calling external APIs set `$tries` and `$backoff`.
+UI primitives from shadcn-vue. Shared types in `resources/js/types/`.
 
-## 9. Testing Strategy
+For destructive actions, the backend passes a `can` prop (e.g. `can.deactivate`, `can.delete`) so the UI only shows buttons the user is actually allowed to use.
 
-- **Feature tests** (`tests/Feature/{Module}/`) exercise full HTTP flows including middleware, validation, and policies.
-- **Unit tests** (`tests/Unit/…`) cover isolated logic such as policy decisions.
-- `RefreshDatabase` for anything touching the DB; the database is never mocked in feature tests.
-- Multi-tenant isolation is asserted directly (an organizer cannot see or mutate another org's users).
+## Background work
 
-## 10. Deployment
+Redis for cache, session, queue. Heavy stuff (leaderboard calc, exports) will run as queued jobs from Sprint 2 onward. External API jobs get `$tries` and `$backoff`.
 
-- **Local development:** `php artisan serve` + `npm run dev` (or `composer dev`). Docker is **not** used locally.
-- **Production:** Docker (`docker-compose.yml`, `docker/`) separates web, app, queue worker, and scheduler as distinct processes.
+## Testing
 
-## Related Documents
+- Feature tests in `tests/Feature/{Module}/` — full HTTP stack, real DB (`RefreshDatabase`)
+- Unit tests for isolated logic (policies, pure service methods)
+- Tenant isolation tested explicitly: organizer A cannot touch org B's users
 
-- [PRD.md](PRD.md) — product requirements
-- [DATABASE.md](DATABASE.md) — schema and relationships
-- [API_GUIDELINES.md](API_GUIDELINES.md) — request/response conventions
-- [DECISIONS.md](DECISIONS.md) — architectural decision records
-- [../PROJECT_RULES.md](../PROJECT_RULES.md) — coding standards
+## Deployment
+
+Local: `composer dev` (serve + Vite + queue + logs). MySQL + Redis, not SQLite.
+
+Production: Docker (`docker-compose.yml`). Not used locally — keeps iteration fast.
+
+---
+
+*Competition-domain architecture (events, jobs, scopes) gets added here when Sprint 2 ships.*

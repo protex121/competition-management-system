@@ -1,107 +1,127 @@
-# Architectural Decision Records — Competition Management System
+# Decisions
 
-This log captures significant decisions, their context, and their consequences. Each record is immutable once accepted; if a decision changes, add a new record that supersedes the old one.
+A log of architectural choices — what was chosen, what was rejected, and why. When a decision changes, a new entry is added rather than editing the old one.
 
-**Format:** ADR (lightweight). Status is one of `Accepted`, `Superseded`, `Deprecated`.
-
----
-
-## ADR-0001 — Modular monolith over microservices
-
-- **Status:** Accepted
-- **Context:** Small team, cohesive domain, portfolio project. Need clear boundaries without operational overhead.
-- **Decision:** Build a single Laravel application organized by domain module (module subfolders inside each layer).
-- **Consequences:** Simple deploy and local dev; clear ownership per module; option to extract a service later if a real need appears. Requires discipline to keep modules from leaking into each other.
+Format: lightweight ADR. Status = `Accepted` | `Superseded` | `Deprecated`.
 
 ---
 
-## ADR-0002 — Row-level multi-tenancy on a shared database
+## Modular monolith, not microservices
 
-- **Status:** Accepted
-- **Context:** Multiple organizations must be isolated, but per-tenant databases add operational complexity disproportionate to the current scale.
-- **Decision:** Shared database with an `organization_id` column on tenant-owned tables. Isolation enforced in code (services/policies now; `OrganizationScope` global scope for competition-domain models later).
-- **Consequences:** Cheap to operate; isolation must be proven by tests. The scope is deliberately **not** applied globally to `User` (auth and super-admin queries must cross tenants).
+**Accepted**
 
----
+One Laravel app, modules as subfolders (`Identity/`, `Competition/`, etc.).
 
-## ADR-0003 — Super admin uses a nullable `organization_id` (no separate guard)
-
-- **Status:** Accepted
-- **Context:** The platform operator must manage users across all organizations.
-- **Decision:** Represent super admin as a user with `role = super-admin` and `organization_id = null`, authenticated through the same guard as everyone else.
-- **Consequences:** One auth path to maintain. Login must handle the tenant-less case (see ADR-0005). Composite unique `(organization_id, email)` permits multiple `NULL`s, mitigated by seeding super admins only.
+The domain is a single product and the team is small. Microservices would mean more infra for little benefit at this scale. If a module ever needs to scale independently, the folder boundaries make extraction possible — but that's not being optimized for prematurely.
 
 ---
 
-## ADR-0004 — Per-organization email uniqueness
+## Row-level tenancy on a shared database
 
-- **Status:** Accepted
-- **Context:** The same person (email) may participate in multiple organizations.
-- **Decision:** Replace the global unique constraint on `email` with a composite unique `(organization_id, email)`.
-- **Consequences:** Email + password is no longer sufficient to identify a user — login must be tenant-scoped (see ADR-0005). Validation rules for uniqueness are always scoped by `organization_id`.
+**Accepted**
 
----
+`organization_id` on tenant-owned rows. One database.
 
-## ADR-0005 — Workspace-slug-scoped login
+Per-tenant databases would give cleaner isolation but add ops work this project doesn't need yet. Isolation is enforced in code and proven in tests — that's the trade-off.
 
-- **Status:** Accepted
-- **Context:** Consequence of ADR-0004 — the same email can exist in several orgs, so authentication must select a tenant.
-- **Decision:** The login form takes an `organization_slug` in addition to email/password. The slug resolves the organization; credentials are matched within it. The reserved slug `platform` routes to super-admin authentication.
-- **Consequences:** Slightly more friction at login (users must know their workspace), but unambiguous identity resolution. Subdomain-based tenancy was rejected as heavier than needed for now.
+**Important:** `OrganizationScope` will go on competition-domain models (Sprint 2+), but **not** on `User`. Login and super-admin queries need to cross org boundaries.
 
 ---
 
-## ADR-0006 — Roles as a PHP enum, not `spatie/laravel-permission`
+## Super admin = nullable `organization_id`, same guard
 
-- **Status:** Accepted
-- **Context:** Sprint 1 needs a small, fixed set of roles with one role per user.
-- **Decision:** Model roles as a backed PHP enum (`UserRole`) stored in a `string` column and cast on the model. No permissions package yet.
-- **Consequences:** Zero extra dependencies and migrations; type-safe role checks. If fine-grained, assignable permissions become necessary, revisit with `spatie/laravel-permission` (this ADR would be superseded).
+**Accepted**
 
----
+No separate admin guard or admin table. Super admin is a user with `role = super-admin` and `organization_id = null`.
 
-## ADR-0007 — Both deactivation and soft deletes for users
-
-- **Status:** Accepted
-- **Context:** Organizers need a reversible "suspend" action distinct from removal, and removals should be recoverable.
-- **Decision:** Add `deactivated_at` (reversible suspension that blocks login via `EnsureUserIsActive`) **and** `deleted_at` soft deletes (recoverable removal). These are independent states.
-- **Consequences:** Clear separation between "temporarily blocked" and "removed". `UserPolicy` guards both (cannot act on self, cannot remove the last organizer). Restoration of soft-deleted users is reserved for platform admins.
+One auth path to maintain. Downside: login needs a special case for tenant-less users (see next entry). Also, MySQL's unique index treats `NULL`s as distinct, so super admins are seeded only — no UI to create them.
 
 ---
 
-## ADR-0008 — Authorization in Policies; business logic in Services
+## Email unique per organization, not globally
 
-- **Status:** Accepted
-- **Context:** Keep controllers thin and testable; avoid scattering role checks.
-- **Decision:** Form Requests validate and call Policies via `authorize()`; controllers may also call `$this->authorize()`; all workflows live in stateless Services that receive explicit inputs.
-- **Consequences:** Controllers stay ≤ ~15 lines. Policies are unit-testable in isolation. The base `Controller` includes `AuthorizesRequests` so any controller can authorize.
+**Accepted**
 
----
+The global `unique(email)` was dropped. `unique(organization_id, email)` was added instead.
 
-## ADR-0009 — Inertia now, JSON API later
-
-- **Status:** Accepted
-- **Context:** The product is a first-party web app; a general-purpose API is not yet required.
-- **Decision:** Use Inertia.js for the web app. Defer a versioned JSON API (Sanctum) until a concrete consumer (e.g. mobile) exists.
-- **Consequences:** No premature API surface to version and secure. Conventions for the future API are pre-defined in [API_GUIDELINES.md](API_GUIDELINES.md) so it can be added consistently.
+Same person can join multiple orgs with the same email — realistic for hackathons. Cost: login can't be email + password alone anymore; the workspace slug is required.
 
 ---
 
-## ADR-0010 — Docker for deployment only; MySQL + Redis from day one
+## Workspace slug on the login form
 
-- **Status:** Accepted
-- **Context:** Reproducible production environment is desirable, but Docker-based local dev adds friction.
-- **Decision:** Local development uses `php artisan serve` + `npm run dev` (`composer dev`) against local MySQL and Redis. Docker (`docker-compose.yml`, `docker/`) is reserved for deployment/CI.
-- **Consequences:** Fast local iteration; production-like drivers (MySQL, Redis) used from the start rather than SQLite, avoiding driver-specific surprises.
+**Accepted**
+
+Login sends `organization_slug` + email + password. The slug resolves the org; auth happens within it.
+
+Subdomain tenancy (`acme.app.com/login`) was considered and rejected as overkill for Sprint 1. The slug field adds a bit of login friction but keeps identity unambiguous. Reserved slug `platform` for super admin.
 
 ---
 
-## Superseded / historical notes
+## PHP enum for roles, not Spatie Permission
 
-- Early roadmap drafts assumed `spatie/laravel-permission` and invite-only registration for Sprint 1. Both were changed before implementation: roles are a PHP enum (ADR-0006) and self-serve organization signup is enabled (see [ROADMAP.md](ROADMAP.md)). Invite flow is deferred.
+**Accepted**
 
-## Related Documents
+`UserRole` backed enum, one role per user, stored as a string column.
 
-- [PRD.md](PRD.md) — requirements these decisions serve
-- [ARCHITECTURE.md](ARCHITECTURE.md) — how the decisions are realized
-- [DATABASE.md](DATABASE.md) — schema shaped by ADR-0002/0004/0007
+Sprint 1 needs six role labels but only assigns two (`super-admin` via seeder, `organizer` via registration). Spatie would add tables, config, and overhead for no current benefit. If granular assignable permissions become necessary later, this decision gets revisited and likely superseded.
+
+---
+
+## Deactivation AND soft delete — two different things
+
+**Accepted**
+
+- `deactivated_at` — suspend login, reversible, user still visible in lists
+- `deleted_at` — soft delete, user disappears from lists, recoverable by platform admin
+
+This distinction came up during user management: organizers need to block someone without removing all trace of them. Separate fields, separate policy methods, separate UI buttons.
+
+Guard rails on both: can't act on yourself, can't remove the last organizer.
+
+---
+
+## Policies for auth, Services for logic
+
+**Accepted**
+
+Form Requests call Policies. Controllers can too. All workflow logic lives in Services with explicit inputs (`User $actor`, not `auth()->user()` inside the service).
+
+During Sprint 1, `UserController` called `$this->authorize()` but Laravel 12's empty base `Controller` didn't include the trait. Fixed by adding `AuthorizesRequests`. The pattern is worth keeping: controllers stay thin, policies are unit-testable.
+
+---
+
+## Inertia now, JSON API when there's a consumer
+
+**Accepted**
+
+The web app uses Inertia. No REST API until a concrete consumer exists (mobile, integrations).
+
+The API surface isn't versioned and secured prematurely. [API_GUIDELINES.md](API_GUIDELINES.md) documents the planned conventions so they're ready when needed.
+
+---
+
+## Docker for deploy, not local dev
+
+**Accepted**
+
+Local: `composer dev` against MySQL + Redis. Docker files exist for production/CI only.
+
+Docker-based local dev adds friction (rebuilds, volume mounts, debugging through containers). Local iteration is prioritized; the Docker setup gets validated when deployment matters (Sprint 6 target).
+
+MySQL + Redis are used from day one, not SQLite for dev — driver-specific issues get caught early.
+
+---
+
+## Revised during planning (historical)
+
+Early planning assumed Spatie Permission and invite-only registration for Sprint 1. Both changed before implementation:
+
+- Roles → PHP enum (above)
+- Invite-only → self-serve signup enabled; invite flow deferred to post-MVP
+
+The old ROADMAP items document what was deliberately not built and why.
+
+---
+
+*New decisions are appended here. Superseded ones are kept for context.*

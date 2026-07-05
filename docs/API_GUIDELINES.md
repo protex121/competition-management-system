@@ -1,20 +1,22 @@
-# API Guidelines — Competition Management System
+# API Guidelines
 
-## Scope
+Conventions for how the app talks to the backend — both what exists today (Inertia) and what will apply when a JSON API is added.
 
-The web application communicates with the backend via **Inertia.js**, not a REST/JSON API — controllers return `Inertia::render(...)` with typed props, and forms post through Inertia's client. There is **no public HTTP API yet**.
-
-This document defines the conventions to follow **when** a JSON API is introduced (e.g. for mobile clients, integrations — see [ROADMAP.md](ROADMAP.md) "Future"). It doubles as the contract for the current Inertia layer where relevant.
+> **Status:** The web app uses Inertia only. There's no public JSON API yet. Section 2 is the plan for when mobile or third-party clients need one — this doc is updated when that sprint starts, same as everything else in `docs/`.
 
 ---
 
-## 1. Inertia Conventions (current)
+## 1. Inertia (current)
 
-### Controller responses
+This is how every web route works today.
 
-- Return `Inertia::render('module/Page', [...props])` — never raw arrays or `response()->json()` for web routes.
-- Page component names mirror the module path: `identity/users/Index`.
-- Pass authorization hints as a `can` prop so the UI can conditionally render actions:
+### Responses
+
+Controllers return `Inertia::render('module/Page', [...props])`. No raw JSON on web routes.
+
+Page paths mirror the module: `identity/users/Index`, `identity/users/Edit`.
+
+For actions that depend on authorization, pass a `can` prop from the controller:
 
 ```php
 return Inertia::render('identity/users/Edit', [
@@ -28,108 +30,88 @@ return Inertia::render('identity/users/Edit', [
 ]);
 ```
 
-### Redirects & flashes
+The frontend uses `can` to show/hide buttons. The policy is still enforced on the backend regardless.
 
-- Mutations redirect to a named route (`to_route('users.index')`), following Post/Redirect/Get.
-- Validation errors are returned by Form Requests and surfaced automatically by Inertia.
+### Mutations
+
+POST/PUT/PATCH/DELETE → redirect to a named route (`to_route('users.index')`). Validation errors come back through Form Requests automatically.
 
 ### Pagination
 
-- Paginate with Eloquent's paginator; Inertia receives `{ data, links, meta }`. The frontend consumes `links` for pagination controls.
+Eloquent paginator → Inertia gets `{ data, links, meta }`. Frontend renders pagination from `links`.
 
 ---
 
-## 2. Future JSON API Conventions
+## 2. JSON API (planned)
 
-When a versioned API is added, follow the rules below.
+When a versioned API is added (likely Sanctum + `/api/v1/...`), these are the conventions to follow. Subject to change during implementation — the shape is decided upfront rather than under deadline pressure.
 
-### Versioning & namespacing
+### Structure
 
-- Prefix routes with a version: `/api/v1/...`.
-- Controllers live under `App\Http\Controllers\Api\V1\{Module}`.
-- Never mix versions within one controller.
+- Routes: `/api/v1/{resource}`
+- Controllers: `App\Http\Controllers\Api\V1\{Module}`
+- One version per controller namespace — no mixing
 
-### Authentication
+### Auth
 
-- Use **Laravel Sanctum** tokens (or SPA cookie auth for first-party clients).
-- Every request must resolve a tenant: derive `organization_id` from the authenticated user, never from a client-supplied field.
+Sanctum tokens (or SPA cookie for first-party). Tenant comes from the authenticated user, never from a request body field. If someone sends `organization_id` in the payload, ignore it.
 
-### Standard response envelope
+### Response envelope
 
-All API responses share a consistent shape:
+Every response:
 
 ```json
 {
   "success": true,
-  "message": "Human-readable summary",
+  "message": "",
   "errors": [],
-  "data": { }
+  "data": {}
 }
 ```
 
-- `success`: boolean.
-- `message`: short description (empty string allowed).
-- `errors`: array/object of field errors (empty when `success` is `true`).
-- `data`: the payload — an object, array, or `null`.
+No bare model dumps. Wrap through a shared helper/trait.
 
-Do not return bare models or raw `response()->json($model)`. Wrap through a shared responder trait/helper so the envelope stays uniform.
+### Status codes
 
-### HTTP status codes
-
-| Scenario | Status |
+| When | Code |
 |---|---|
-| Success (read/update) | `200 OK` |
-| Resource created | `201 Created` |
-| Accepted for async processing | `202 Accepted` |
-| No content (delete) | `204 No Content` |
-| Validation failed | `422 Unprocessable Entity` |
-| Unauthenticated | `401 Unauthorized` |
-| Authenticated but forbidden | `403 Forbidden` |
-| Not found (or hidden by tenant scope) | `404 Not Found` |
-| Rate limited | `429 Too Many Requests` |
-| Server error | `500 Internal Server Error` |
+| Read / update OK | 200 |
+| Created | 201 |
+| Accepted (async) | 202 |
+| Deleted | 204 |
+| Validation failed | 422 |
+| Not logged in | 401 |
+| Logged in, not allowed | 403 |
+| Not found / hidden by tenant scope | 404 |
+| Rate limited | 429 |
 
-### Validation
+Cross-tenant resource that doesn't exist for you → **404**, not 403. Don't leak that it exists in another org.
 
-- Use Form Requests for all input, mirroring the web module structure.
-- Return field-level errors in `errors`; use a `422` status.
+### Input / output
 
-### Authorization
-
-- Enforce Policies exactly as the web layer does. A cross-tenant resource should return `404` (not `403`) to avoid leaking existence.
-
-### Pagination, filtering, sorting
-
-- Paginate list endpoints by default; include pagination metadata in `data` or a top-level `meta`.
-- Accept `page`, `per_page` (capped), and explicit `sort`/`filter` params — never allow arbitrary column injection.
-
-### Serialization
-
-- Use **API Resources** (`JsonResource`) to shape output; never expose internal columns like `password`, `remember_token`, or raw foreign keys the client shouldn't see.
-- Timestamps in ISO-8601 (UTC).
-
-### Rate limiting
-
-- Apply throttling to authentication and other sensitive endpoints (`throttle` middleware).
+- Form Requests for validation, same module structure as web
+- API Resources (`JsonResource`) for output — no passwords, tokens, or internal FKs the client doesn't need
+- Timestamps in ISO-8601 UTC
+- Lists paginated by default; cap `per_page`
+- Explicit `sort` / `filter` params — no arbitrary column injection
 
 ### Naming
 
-- Resource routes are plural nouns: `/api/v1/competitions`.
-- Route names use dot notation: `api.v1.competitions.index`.
+Plural resources: `/api/v1/competitions`. Route names: `api.v1.competitions.index`.
 
 ---
 
-## 3. Security Checklist (applies to both layers)
+## 3. Security (both layers)
 
-- Authorize before any data access (Policy).
-- Never trust a client-supplied `organization_id`; derive tenancy from the authenticated user.
-- Mass-assignment protection via strict `$fillable`.
-- Validate and constrain file uploads (type, size, dimensions).
-- Rate-limit auth and other abuse-prone endpoints.
-- Return `404` for cross-tenant resources to avoid existence disclosure.
+Same rules regardless of Inertia or JSON:
 
-## Related Documents
+- Policy check before data access
+- Never trust client-supplied `organization_id`
+- Strict `$fillable` on models
+- Validate uploads (type, size, dimensions)
+- Throttle auth endpoints
+- 404 for cross-tenant misses
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — request lifecycle and layering
-- [DATABASE.md](DATABASE.md) — what data exists to expose
-- [DECISIONS.md](DECISIONS.md) — why Inertia now, API later
+---
+
+*Section 2 will be expanded with concrete examples (routes, resource classes, test patterns) once the API sprint ships.*

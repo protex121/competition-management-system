@@ -1,103 +1,104 @@
-# Product Requirements Document — Competition Management System
+# Product Requirements
 
-## 1. Overview
+What this app is supposed to do, and what it explicitly won't do (yet).
 
-The Competition Management System (CMS) is a **multi-tenant SaaS platform** where organizations run hackathon-style competitions end to end: participants register, submit their work, judges score submissions against rubrics, and leaderboards are computed automatically.
+## The idea
 
-It is built as a portfolio project to demonstrate production-quality Laravel engineering — real domain modeling, multi-tenancy, authorization, and testing — rather than a shallow CRUD demo.
+Organizations run hackathon-style competitions on this platform. Participants register, submit work, judges score it, and leaderboards get computed from those scores.
 
-## 2. Problem Statement
+The hard part isn't CRUD — it's getting tenancy, roles, deadlines, and fairness rules right. That's what the early sprints focus on.
 
-Organizers of hackathons and event-style competitions currently juggle spreadsheets, forms, and manual scoring. This is error-prone and does not scale across multiple concurrent events. CMS centralizes the full competition lifecycle in one tenant-isolated platform.
+## Problem
 
-## 3. Goals & Non-Goals
+Running a competition with spreadsheets and Google Forms works once. It falls apart when you have multiple events, multiple orgs, or need audit trails. This app centralizes that lifecycle in one place, with each organization's data kept separate.
 
-### Goals
+## Goals
 
-- Let an organization self-register and manage its own users in isolation from other tenants.
-- Provide role-based access control (organizer, committee, judge, participant, coach).
-- Support the full competition lifecycle: create → publish → register → submit → judge → rank.
-- Enforce fairness rules (deadlines, capacity, judges cannot score their own work).
-- Compute and publish leaderboards automatically.
+- Organizations can sign up and manage their own users without seeing other tenants' data.
+- Roles control what you can do: organizer, judge, participant, etc.
+- Full competition flow: create → publish → register → submit → judge → rank.
+- Fairness enforced in code: deadlines, capacity limits, judges can't score their own submissions.
 
-### Non-Goals (for the current MVP)
+## Out of scope for now
 
-- Billing / subscriptions (deferred; see [ROADMAP.md](ROADMAP.md)).
-- Per-tenant custom branding (logos, colors).
-- Native mobile clients.
-- Real-time collaborative editing.
+- Billing / subscriptions
+- Custom branding per org
+- Mobile apps
+- Real-time collaboration
 
-## 4. Personas & Roles
+See [ROADMAP.md](ROADMAP.md) for when these might land.
 
-| Role | Description | Key capabilities |
+## Roles
+
+| Role | Who | Can do |
 |---|---|---|
-| **Super Admin** | Platform operator, no organization (`organization_id = null`) | Manage users across all organizations; seeded only |
-| **Organizer** | Owner of an organization (first registered user) | Manage org users, create & manage competitions |
-| **Committee** | Organizer's staff | Assist with competition operations (future scope) |
-| **Judge** | Scores submissions | View assigned submissions, submit scores |
-| **Participant** | Competes | Register, submit work, view public results |
-| **Coach** | Mentors participants/teams | Support role (future scope) |
+| Super Admin | Platform operator (`organization_id = null`) | Manage users across all orgs. Created via seeder only. |
+| Organizer | First user who registers an org | Manage users, run competitions |
+| Committee | Org staff | Help run events *(not built yet)* |
+| Judge | Assigned scorer | Score submissions *(Sprint 5)* |
+| Participant | Competitor | Register and submit *(Sprint 3–4)* |
+| Coach | Mentor | Support role *(future)* |
 
-## 5. Tenancy Model
+## Tenancy
 
-- **Row-level multi-tenancy** on a shared database.
-- Every tenant-owned record carries an `organization_id`.
-- Users belong to exactly one organization; super admins belong to none.
-- Email is unique **per organization**, not globally — the same email can exist in multiple orgs.
-- Login is scoped by a **workspace slug**; super admins use the reserved slug `platform`.
+Shared database, row-level isolation via `organization_id`.
 
-## 6. Functional Requirements by Domain
+A few things that matter early:
 
-### 6.1 Identity & User Management (implemented)
+- Users belong to one org. Super admins belong to none.
+- Email is unique **per org**, not globally — same person can exist in multiple orgs.
+- Login requires a **workspace slug** so we know which org to authenticate against. Super admins use the slug `platform`.
 
-- Self-registration creates a new organization and its first organizer.
-- Users can update their profile (name, email) and upload an avatar.
-- Users can change their password.
-- Organizers/super admins can create, edit, deactivate, reactivate, and soft-delete users.
-- Deactivated users cannot authenticate; active session is invalidated on next request.
-- Business rules: cannot remove yourself, cannot remove the last organizer, `super-admin` role is not assignable through the UI.
+More detail in [DECISIONS.md](DECISIONS.md) (ADR-0002 through ADR-0005).
 
-### 6.2 Competition Lifecycle (planned)
+## Features by area
 
-- Organizers create competitions with a status workflow: `draft → published → active → closed`.
-- Public competition pages for participants.
+### Identity & users — done (Sprint 1)
 
-### 6.3 Registration & Teams (planned)
+- Register → creates org + first organizer
+- Login scoped by workspace slug
+- Profile update, avatar upload, password change
+- Organizer/super-admin user management: create, edit, deactivate, reactivate, soft delete
+- Deactivated users can't log in; existing sessions get killed on next request
+- Guard rails: can't delete yourself, can't delete the last organizer, can't assign `super-admin` via UI
 
-- Participants register solo or as teams, subject to deadlines and capacity limits.
+### Competition lifecycle — Sprint 2
 
-### 6.4 Submissions (planned)
+- CRUD for competitions with status workflow: draft → published → active → closed
+- Public competition page for participants
 
-- Participants submit work (title, description, files/links) before a deadline.
+### Registration & teams — Sprint 3
 
-### 6.5 Judging & Scoring (planned)
+- Solo or team registration, deadlines, capacity limits
 
-- Judges score submissions against rubric criteria; a judge cannot score their own submission.
+### Submissions — Sprint 4
 
-### 6.6 Leaderboard & Results (planned)
+- Submit work (title, description, files/links) before deadline
 
-- Scores aggregate into rankings via a queued job; results are publishable.
+### Judging — Sprint 5
 
-## 7. Non-Functional Requirements
+- Rubric-based scoring; judges can't score their own work
 
-| Area | Requirement |
-|---|---|
-| **Security** | Authorization enforced by Policies before any data access; strict mass-assignment control; validated file uploads; rate limiting on auth. |
-| **Isolation** | Cross-tenant access must be impossible; proven by feature tests. |
-| **Performance** | Avoid N+1 queries; eager-load relationships; queue heavy work. |
-| **Maintainability** | Modular monolith; thin controllers; services own business logic. |
-| **Testability** | Feature tests for HTTP flows, unit tests for isolated logic; `RefreshDatabase`. |
+### Leaderboard — Sprint 6
 
-## 8. Success Metrics
+- Queued job aggregates scores; publishable results
 
-- 100% of user-management flows covered by automated tests.
-- Zero cross-tenant data leaks in the test suite.
-- A reviewer can locate any artifact (controller, service, request, policy, test) from its module name alone.
+## Non-functional expectations
 
-## 9. Related Documents
+These aren't nice-to-haves — they're the baseline expectations for the codebase:
 
-- [ROADMAP.md](ROADMAP.md) — sprint plan and delivery status
-- [ARCHITECTURE.md](ARCHITECTURE.md) — how the system is structured
-- [DATABASE.md](DATABASE.md) — schema and relationships
-- [API_GUIDELINES.md](API_GUIDELINES.md) — request/response conventions
-- [DECISIONS.md](DECISIONS.md) — architectural decision records
+- **Security:** Policies before data access. Strict `$fillable`. Validated uploads.
+- **Isolation:** Cross-tenant access must fail. Covered by feature tests.
+- **Performance:** Eager-load relationships. Queue heavy work.
+- **Maintainability:** Thin controllers, logic in services, modules by domain.
+- **Tests:** Feature tests for HTTP flows. No mocking the DB in feature tests.
+
+## Sprint 1 acceptance criteria
+
+- User management flows have automated test coverage.
+- An organizer cannot see or touch another org's users (tested).
+- Given a module name (e.g. `Identity`), you can find the controller, service, request, policy, and tests without guessing.
+
+---
+
+*This doc is updated as sprints ship. Planned sections stay here as a north star — they're marked done when the code lands.*

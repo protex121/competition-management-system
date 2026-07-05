@@ -1,8 +1,8 @@
 # Competition Management System
 
-A multi-tenant SaaS platform for managing hackathon-style competitions — organizations run events, participants register, judges score submissions, and leaderboards are computed automatically.
+Multi-tenant platform for running hackathon-style competitions — orgs manage events, participants submit work, judges score it, leaderboards rank the results.
 
-Built as a portfolio project demonstrating production-quality Laravel engineering practices.
+Laravel 12 + Vue 3 + Inertia. Built incrementally, sprint by sprint.
 
 ## Tech Stack
 
@@ -143,13 +143,15 @@ resources/js/
 
 ## Documentation
 
-- [PROJECT_RULES.md](PROJECT_RULES.md) — coding standards and conventions
-- [docs/PRD.md](docs/PRD.md) — product requirements
-- [docs/ROADMAP.md](docs/ROADMAP.md) — sprint plan and feature timeline
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — system structure and request lifecycle
-- [docs/DATABASE.md](docs/DATABASE.md) — schema and relationships
-- [docs/API_GUIDELINES.md](docs/API_GUIDELINES.md) — request/response conventions
-- [docs/DECISIONS.md](docs/DECISIONS.md) — architectural decision records
+| Doc | What it covers |
+|---|---|
+| [PROJECT_RULES.md](PROJECT_RULES.md) | Coding standards for this repo |
+| [docs/PRD.md](docs/PRD.md) | Product requirements |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Sprint plan — updated when each sprint ships |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System structure and request flow |
+| [docs/DATABASE.md](docs/DATABASE.md) | Schema (migrations are source of truth) |
+| [docs/API_GUIDELINES.md](docs/API_GUIDELINES.md) | Inertia conventions now; JSON API plan for later |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | Architectural decisions and trade-offs |
 
 ## Current Status
 
