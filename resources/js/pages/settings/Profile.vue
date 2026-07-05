@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { TransitionRoot } from '@headlessui/vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
@@ -40,6 +41,29 @@ const submit = () => {
         preserveScroll: true,
     });
 };
+
+const avatarPreview = ref<string | null>(user.avatar_url ?? null);
+
+const avatarForm = useForm<{ avatar: File | null }>({
+    avatar: null,
+});
+
+const onAvatarSelected = (event: Event) => {
+    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+    avatarForm.avatar = file;
+
+    if (file) {
+        avatarPreview.value = URL.createObjectURL(file);
+    }
+};
+
+const uploadAvatar = () => {
+    avatarForm.post(route('profile.avatar.update'), {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => avatarForm.reset('avatar'),
+    });
+};
 </script>
 
 <template>
@@ -48,6 +72,22 @@ const submit = () => {
 
         <SettingsLayout>
             <div class="flex flex-col space-y-6">
+                <HeadingSmall title="Avatar" description="Upload a profile picture (JPG, PNG or WebP, max 2MB)" />
+
+                <div class="flex items-center gap-4">
+                    <span class="inline-flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-neutral-200">
+                        <img v-if="avatarPreview" :src="avatarPreview" alt="Avatar preview" class="h-full w-full object-cover" />
+                        <span v-else class="text-lg font-medium text-neutral-500">{{ user.name.charAt(0).toUpperCase() }}</span>
+                    </span>
+
+                    <div class="grid gap-2">
+                        <Input id="avatar" type="file" accept="image/jpeg,image/png,image/webp" @change="onAvatarSelected" />
+                        <InputError :message="avatarForm.errors.avatar" />
+                    </div>
+
+                    <Button type="button" :disabled="!avatarForm.avatar || avatarForm.processing" @click="uploadAvatar"> Upload </Button>
+                </div>
+
                 <HeadingSmall title="Profile information" description="Update your name and email address" />
 
                 <form @submit.prevent="submit" class="space-y-6">

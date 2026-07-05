@@ -1,8 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Auth;
 
+use App\Enums\UserRole;
+use App\Models\Organization;
 use Illuminate\Auth\Events\Lockout;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -12,21 +17,22 @@ use Illuminate\Validation\ValidationException;
 class LoginRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Reserved slug that routes to platform-level (super-admin) authentication.
      */
+    private const PLATFORM_SLUG = 'platform';
+
     public function authorize(): bool
     {
         return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
+            'organization_slug' => ['required', 'string'],
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
         ];
@@ -35,13 +41,13 @@ class LoginRequest extends FormRequest
     /**
      * Attempt to authenticate the request's credentials.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        if (! Auth::attempt($this->credentials(), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -49,13 +55,56 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        if (Auth::user()?->isDeactivated()) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'This account has been deactivated.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 
     /**
-     * Ensure the login request is not rate limited.
+     * Build the credentials array, scoped to the resolved organization.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @return array<string, mixed>
+     *
+     * @throws ValidationException
+     */
+    protected function credentials(): array
+    {
+        $slug = Str::lower(trim((string) $this->string('organization_slug')));
+
+        if ($slug === self::PLATFORM_SLUG) {
+            return [
+                'email' => $this->input('email'),
+                'password' => $this->input('password'),
+                'organization_id' => null,
+                'role' => UserRole::SuperAdmin->value,
+            ];
+        }
+
+        $organization = Organization::query()->where('slug', $slug)->first();
+
+        if ($organization === null) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'organization_slug' => 'No workspace found for this identifier.',
+            ]);
+        }
+
+        return [
+            'email' => $this->input('email'),
+            'password' => $this->input('password'),
+            'organization_id' => $organization->id,
+        ];
+    }
+
+    /**
+     * @throws ValidationException
      */
     public function ensureIsNotRateLimited(): void
     {
@@ -75,11 +124,12 @@ class LoginRequest extends FormRequest
         ]);
     }
 
-    /**
-     * Get the rate limiting throttle key for the request.
-     */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(
+            Str::lower((string) $this->string('email'))
+            .'|'.Str::lower((string) $this->string('organization_slug'))
+            .'|'.$this->ip()
+        );
     }
 }

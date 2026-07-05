@@ -3,18 +3,39 @@ import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
+import { type NavItem, type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/vue3';
+import { BookOpen, Folder, LayoutGrid, Users } from 'lucide-vue-next';
+import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
-    },
-];
+const page = usePage<SharedData>();
+
+const canManageUsers = computed(() => {
+    const role = page.props.auth.user?.role;
+
+    return role === 'organizer' || role === 'super-admin';
+});
+
+const mainNavItems = computed<NavItem[]>(() => {
+    const items: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: '/dashboard',
+            icon: LayoutGrid,
+        },
+    ];
+
+    if (canManageUsers.value) {
+        items.push({
+            title: 'Users',
+            href: route('users.index'),
+            icon: Users,
+        });
+    }
+
+    return items;
+});
 
 const footerNavItems: NavItem[] = [
     {
