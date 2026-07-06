@@ -116,7 +116,7 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 
 ### Invitations
 
-- [ ] Send / revoke invitation ([#32](https://github.com/protex121/competition-management-system/issues/32))
+- [x] Send / revoke invitation ([#32](https://github.com/protex121/competition-management-system/issues/32))
 - [ ] Accept / decline invitation ([#33](https://github.com/protex121/competition-management-system/issues/33))
 - [ ] Invitation UI ([#34](https://github.com/protex121/competition-management-system/issues/34))
 
