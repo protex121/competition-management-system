@@ -157,4 +157,28 @@ class PublicCompetitionTest extends TestCase
                 ->where('categories.0.name', 'General')
             );
     }
+
+    public function test_public_page_includes_participation_mode_hints(): void
+    {
+        $organization = Organization::factory()->create(['slug' => 'acme-corp']);
+        $competition = Competition::factory()->teamMode()->published()->create([
+            'organization_id' => $organization->id,
+            'slug' => 'team-event',
+            'min_team_size' => 2,
+            'max_team_size' => 4,
+            'requires_coach' => true,
+        ]);
+
+        $this->get(route('events.competitions.show', [
+            'organization' => $organization->slug,
+            'competition' => $competition->slug,
+        ]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('competition.registration_mode', 'team')
+                ->where('competition.min_team_size', 2)
+                ->where('competition.max_team_size', 4)
+                ->where('competition.requires_coach', true)
+            );
+    }
 }
