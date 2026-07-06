@@ -60,7 +60,7 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 
 ---
 
-## Sprint 2 — Competition & Category Management 🔄
+## Sprint 2 — Competition & Category Management ✅
 
 **Goal:** Organizers create and manage competitions with multiple categories (tracks).
 
@@ -74,34 +74,88 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 - [x] `OrganizationScope` on `Competition`
 - [x] Auto-create default "General" category on competition create
 - [x] Inherit-with-override config on categories
-- [ ] Category CRUD (nested under competition)
+- [x] Category CRUD (nested under competition)
 - [x] Competition CRUD + listing page (organizer view)
-- [ ] Public competition page
+- [x] Public competition page
 - [x] `CompetitionPolicy` + `CompetitionCategoryPolicy`
 - [x] `CompetitionPublished` event
-- [ ] Feature tests
+- [x] Feature tests (149 tests passing)
 
 *When each item ships, this checklist and [DATABASE.md](DATABASE.md) are updated.*
 
 ---
 
-## Sprint 3 — Registration & Teams
+## Sprint 3 — Team & Participant Management 🔄
 
-**Goal:** Participants can register for competitions, optionally as teams.
+**Goal:** Participants build profiles and teams; organizers approve teams. Prepares Sprint 4 registration — **no `registrations` table in this sprint**.
+
+**Domain research:** 🔄 [#22](https://github.com/protex121/competition-management-system/issues/22) — [TEAM_PARTICIPANT_RESEARCH.md](TEAM_PARTICIPANT_RESEARCH.md)  
+**Design doc:** ⏳ [#23](https://github.com/protex121/competition-management-system/issues/23)
+
+### Research & Design
+
+- [ ] Domain research & decisions ([#22](https://github.com/protex121/competition-management-system/issues/22))
+- [ ] `TEAM_PARTICIPANT_DESIGN.md` + ADRs ([#23](https://github.com/protex121/competition-management-system/issues/23))
+
+### Foundation
+
+- [ ] `participant_profiles`, `teams`, `team_members`, `team_invitations` ([#24](https://github.com/protex121/competition-management-system/issues/24))
+- [ ] `registration_mode` + team size settings on competition ([#25](https://github.com/protex121/competition-management-system/issues/25))
+- [ ] Policies + unit tests ([#26](https://github.com/protex121/competition-management-system/issues/26))
+
+### Participant
+
+- [ ] Profile services ([#27](https://github.com/protex121/competition-management-system/issues/27))
+- [ ] Profile UI ([#28](https://github.com/protex121/competition-management-system/issues/28))
+
+### Team core
+
+- [ ] Team CRUD services ([#29](https://github.com/protex121/competition-management-system/issues/29))
+- [ ] Captain transfer + member removal ([#30](https://github.com/protex121/competition-management-system/issues/30))
+- [ ] Participant team UI ([#31](https://github.com/protex121/competition-management-system/issues/31))
+
+### Invitations
+
+- [ ] Send / revoke invitation ([#32](https://github.com/protex121/competition-management-system/issues/32))
+- [ ] Accept / decline invitation ([#33](https://github.com/protex121/competition-management-system/issues/33))
+- [ ] Invitation UI ([#34](https://github.com/protex121/competition-management-system/issues/34))
+
+### Approval
+
+- [ ] Team approval workflow ([#35](https://github.com/protex121/competition-management-system/issues/35))
+- [ ] Organizer review UI ([#36](https://github.com/protex121/competition-management-system/issues/36))
+
+### Coach (P2)
+
+- [ ] Optional coach assignment ([#37](https://github.com/protex121/competition-management-system/issues/37))
+
+### Eligibility (Sprint 4 prep)
+
+- [ ] Eligibility checker services ([#38](https://github.com/protex121/competition-management-system/issues/38))
+- [ ] Public page participation hints — P2 ([#39](https://github.com/protex121/competition-management-system/issues/39))
+
+### Quality
+
+- [ ] Feature test consolidation ([#40](https://github.com/protex121/competition-management-system/issues/40))
+
+---
+
+## Sprint 4 — Registration Management
+
+**Goal:** Participants register (solo or as approved team) to a **category**, subject to deadlines and capacity.
 
 ### Features
 
-- [ ] `Registration` model (user/competition/status)
-- [ ] `Team` model (optional grouping)
+- [ ] `Registration` model (user or team + category + status)
 - [ ] Registration flow (solo and team)
-- [ ] Registration deadline enforcement
-- [ ] Capacity limits per competition
+- [ ] Registration deadline enforcement (with `EffectiveCategoryConfig`)
+- [ ] Capacity limits per category
 - [ ] Registration confirmation notification
 - [ ] Feature tests
 
 ---
 
-## Sprint 4 — Submissions
+## Sprint 5 — Submissions
 
 **Goal:** Participants submit their work for judging.
 
@@ -116,7 +170,7 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 
 ---
 
-## Sprint 5 — Judging & Scoring
+## Sprint 6 — Judging & Scoring
 
 **Goal:** Judges score submissions against a rubric.
 
@@ -132,7 +186,7 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 
 ---
 
-## Sprint 6 — Leaderboard & Results
+## Sprint 7 — Leaderboard & Results
 
 **Goal:** Scores aggregate into rankings. Results are publishable.
 
@@ -173,8 +227,9 @@ Cross-cutting concerns tracked across sprints:
 | Multi-tenant isolation proven by tests | Sprint 1 | ✅ |
 | First Service + Form Request + Policy pattern | Sprint 1 | ✅ |
 | Competition domain researched & documented | Sprint 2 | ✅ |
-| First Event + Job pipeline | Sprint 2 | ⏳ |
-| First Notification | Sprint 3 | ⏳ |
-| Queue worker processing real jobs | Sprint 6 | ⏳ |
-| Docker production deployment tested | Sprint 6 | ⏳ |
+| First Event + Job pipeline | Sprint 2 | ✅ |
+| Team & participant domain researched | Sprint 3 | 🔄 |
+| First Notification | Sprint 4 | ⏳ |
+| Queue worker processing real jobs | Sprint 7 | ⏳ |
+| Docker production deployment tested | Sprint 7 | ⏳ |
 | Git workflow + CI on GitHub | When ready | ⏳ |
