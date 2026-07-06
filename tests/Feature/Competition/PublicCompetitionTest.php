@@ -10,11 +10,15 @@ use App\Models\Competition;
 use App\Models\CompetitionCategory;
 use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Competition\Concerns\CreatesCompetitionFixtures;
 use Tests\TestCase;
 
 class PublicCompetitionTest extends TestCase
 {
+    use CreatesCompetitionFixtures;
     use RefreshDatabase;
+
+    // --- Public visibility ---
 
     public function test_guest_can_view_published_competition(): void
     {
@@ -88,6 +92,8 @@ class PublicCompetitionTest extends TestCase
         ]))->assertNotFound();
     }
 
+    // --- Slug resolution ---
+
     public function test_unknown_organization_or_competition_returns_not_found(): void
     {
         $organization = Organization::factory()->create(['slug' => 'acme-corp']);
@@ -106,6 +112,23 @@ class PublicCompetitionTest extends TestCase
             'competition' => 'missing-event',
         ]))->assertNotFound();
     }
+
+    public function test_competition_slug_is_scoped_to_organization(): void
+    {
+        $orgA = Organization::factory()->create(['slug' => 'org-a']);
+        $orgB = Organization::factory()->create(['slug' => 'org-b']);
+        Competition::factory()->published()->create([
+            'organization_id' => $orgA->id,
+            'slug' => 'shared-slug',
+        ]);
+
+        $this->get(route('events.competitions.show', [
+            'organization' => $orgB->slug,
+            'competition' => 'shared-slug',
+        ]))->assertNotFound();
+    }
+
+    // --- Category display ---
 
     public function test_closed_competition_shows_archived_categories(): void
     {
@@ -130,20 +153,5 @@ class PublicCompetitionTest extends TestCase
                 ->has('categories', 1)
                 ->where('categories.0.name', 'General')
             );
-    }
-
-    public function test_competition_slug_is_scoped_to_organization(): void
-    {
-        $orgA = Organization::factory()->create(['slug' => 'org-a']);
-        $orgB = Organization::factory()->create(['slug' => 'org-b']);
-        Competition::factory()->published()->create([
-            'organization_id' => $orgA->id,
-            'slug' => 'shared-slug',
-        ]);
-
-        $this->get(route('events.competitions.show', [
-            'organization' => $orgB->slug,
-            'competition' => 'shared-slug',
-        ]))->assertNotFound();
     }
 }
