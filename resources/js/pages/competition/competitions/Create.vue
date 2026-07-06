@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { TransitionRoot } from '@headlessui/vue';
+import DateTimePicker from '@/components/DateTimePicker.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -105,12 +106,12 @@ const submit = () => {
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="grid gap-2">
                                 <Label for="starts_at">Event starts</Label>
-                                <Input id="starts_at" v-model="form.starts_at" type="datetime-local" />
+                                <DateTimePicker id="starts_at" v-model="form.starts_at" />
                                 <InputError :message="form.errors.starts_at" />
                             </div>
                             <div class="grid gap-2">
                                 <Label for="ends_at">Event ends</Label>
-                                <Input id="ends_at" v-model="form.ends_at" type="datetime-local" />
+                                <DateTimePicker id="ends_at" v-model="form.ends_at" />
                                 <InputError :message="form.errors.ends_at" />
                             </div>
                         </div>
@@ -118,12 +119,12 @@ const submit = () => {
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="grid gap-2">
                                 <Label for="registration_starts_at">Registration opens</Label>
-                                <Input id="registration_starts_at" v-model="form.registration_starts_at" type="datetime-local" />
+                                <DateTimePicker id="registration_starts_at" v-model="form.registration_starts_at" />
                                 <InputError :message="form.errors.registration_starts_at" />
                             </div>
                             <div class="grid gap-2">
                                 <Label for="registration_ends_at">Registration closes</Label>
-                                <Input id="registration_ends_at" v-model="form.registration_ends_at" type="datetime-local" />
+                                <DateTimePicker id="registration_ends_at" v-model="form.registration_ends_at" />
                                 <InputError :message="form.errors.registration_ends_at" />
                             </div>
                         </div>
