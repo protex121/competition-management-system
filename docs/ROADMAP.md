@@ -95,7 +95,7 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 ### Research & Design
 
 - [x] Domain research & decisions ([#22](https://github.com/protex121/competition-management-system/issues/22))
-- [ ] `TEAM_PARTICIPANT_DESIGN.md` + ADRs ([#23](https://github.com/protex121/competition-management-system/issues/23))
+- [x] `TEAM_PARTICIPANT_DESIGN.md` + ADRs ([#23](https://github.com/protex121/competition-management-system/issues/23))
 
 ### Foundation
 
@@ -105,8 +105,8 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 
 ### Participant
 
-- [ ] Profile services ([#27](https://github.com/protex121/competition-management-system/issues/27))
-- [ ] Profile UI ([#28](https://github.com/protex121/competition-management-system/issues/28))
+- [x] Profile services ([#27](https://github.com/protex121/competition-management-system/issues/27))
+- [x] Profile UI ([#28](https://github.com/protex121/competition-management-system/issues/28))
 
 ### Team core
 
@@ -123,20 +123,20 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 ### Approval
 
 - [x] Team approval workflow ([#35](https://github.com/protex121/competition-management-system/issues/35))
-- [ ] Organizer review UI ([#36](https://github.com/protex121/competition-management-system/issues/36))
+- [x] Organizer review UI ([#36](https://github.com/protex121/competition-management-system/issues/36))
 
 ### Coach (P2)
 
-- [ ] Optional coach assignment ([#37](https://github.com/protex121/competition-management-system/issues/37))
+- [x] Optional coach assignment ([#37](https://github.com/protex121/competition-management-system/issues/37))
 
 ### Eligibility (Sprint 4 prep)
 
-- [ ] Eligibility checker services ([#38](https://github.com/protex121/competition-management-system/issues/38))
-- [ ] Public page participation hints — P2 ([#39](https://github.com/protex121/competition-management-system/issues/39))
+- [x] Eligibility checker services ([#38](https://github.com/protex121/competition-management-system/issues/38))
+- [x] Public page participation hints — P2 ([#39](https://github.com/protex121/competition-management-system/issues/39))
 
 ### Quality
 
-- [ ] Feature test consolidation ([#40](https://github.com/protex121/competition-management-system/issues/40))
+- [x] Feature test consolidation ([#40](https://github.com/protex121/competition-management-system/issues/40))
 
 ---
 

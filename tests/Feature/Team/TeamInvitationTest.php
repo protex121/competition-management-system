@@ -5,38 +5,26 @@ declare(strict_types=1);
 namespace Tests\Feature\Team;
 
 use App\Enums\InvitationStatus;
-use App\Enums\UserRole;
 use App\Models\Competition;
-use App\Models\Organization;
 use App\Models\Scopes\OrganizationScope;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Team\Concerns\CreatesTeamFixtures;
 use Tests\TestCase;
 
 class TeamInvitationTest extends TestCase
 {
+    use CreatesTeamFixtures;
     use RefreshDatabase;
 
     public function test_captain_can_send_and_revoke_invitation(): void
     {
-        $organization = Organization::factory()->create();
-        $competition = Competition::factory()->teamMode()->published()->create([
-            'organization_id' => $organization->id,
-        ]);
-        $captain = User::factory()->create([
-            'organization_id' => $organization->id,
-            'role' => UserRole::Participant,
-        ]);
-        $team = Team::factory()->create([
-            'competition_id' => $competition->id,
-            'captain_user_id' => $captain->id,
-        ]);
-        $invitee = User::factory()->create([
-            'organization_id' => $organization->id,
-            'role' => UserRole::Participant,
-        ]);
+        [$organization, $competition] = $this->createTeamCompetitionContext();
+        $captain = $this->createParticipantFor($organization);
+        $team = $this->createTeamForCaptain($competition, $captain);
+        $invitee = $this->createParticipantFor($organization);
 
         $this->actingAs($captain)
             ->post(route('teams.invitations.store', $team), ['email' => $invitee->email])
@@ -56,12 +44,9 @@ class TeamInvitationTest extends TestCase
 
     public function test_invitee_can_view_inbox_and_accept_invitation(): void
     {
-        $organization = Organization::factory()->create();
+        [$organization] = $this->createTeamCompetitionContext();
         $team = Team::factory()->create();
-        $invitee = User::factory()->create([
-            'organization_id' => $organization->id,
-            'role' => UserRole::Participant,
-        ]);
+        $invitee = $this->createParticipantFor($organization);
         Competition::withoutGlobalScope(OrganizationScope::class)
             ->where('id', $team->competition_id)
             ->update(['organization_id' => $organization->id]);

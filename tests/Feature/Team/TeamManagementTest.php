@@ -6,28 +6,22 @@ namespace Tests\Feature\Team;
 
 use App\Enums\RegistrationMode;
 use App\Enums\TeamStatus;
-use App\Enums\UserRole;
-use App\Models\Competition;
 use App\Models\Organization;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Team\Concerns\CreatesTeamFixtures;
 use Tests\TestCase;
 
 class TeamManagementTest extends TestCase
 {
+    use CreatesTeamFixtures;
     use RefreshDatabase;
 
     public function test_participant_can_create_and_view_team(): void
     {
-        $organization = Organization::factory()->create();
-        $participant = User::factory()->create([
-            'organization_id' => $organization->id,
-            'role' => UserRole::Participant,
-        ]);
-        $competition = Competition::factory()->teamMode()->published()->create([
-            'organization_id' => $organization->id,
-        ]);
+        [$organization, $competition] = $this->createTeamCompetitionContext();
+        $participant = $this->createParticipantFor($organization);
 
         $this->actingAs($participant)
             ->get(route('competitions.teams.index', $competition))
@@ -87,15 +81,12 @@ class TeamManagementTest extends TestCase
 
     public function test_participant_cannot_create_team_in_individual_mode_competition(): void
     {
-        $organization = Organization::factory()->create();
-        $participant = User::factory()->create([
-            'organization_id' => $organization->id,
-            'role' => UserRole::Participant,
-        ]);
-        $competition = Competition::factory()->published()->create([
-            'organization_id' => $organization->id,
+        [$organization, $competition] = $this->createTeamCompetitionContext([
             'registration_mode' => RegistrationMode::Individual,
+            'min_team_size' => null,
+            'max_team_size' => null,
         ]);
+        $participant = $this->createParticipantFor($organization);
 
         $this->actingAs($participant)
             ->get(route('competitions.teams.create', $competition))
@@ -108,11 +99,8 @@ class TeamManagementTest extends TestCase
 
     public function test_organizer_can_list_all_teams_in_competition(): void
     {
-        $organization = Organization::factory()->create();
-        $organizer = User::factory()->organizer()->create(['organization_id' => $organization->id]);
-        $competition = Competition::factory()->teamMode()->published()->create([
-            'organization_id' => $organization->id,
-        ]);
+        [$organization, $competition] = $this->createTeamCompetitionContext();
+        $organizer = $this->createOrganizerFor($organization);
 
         Team::factory()->count(2)->create(['competition_id' => $competition->id]);
 
@@ -127,7 +115,7 @@ class TeamManagementTest extends TestCase
     public function test_cross_org_participant_cannot_view_team(): void
     {
         $team = Team::factory()->create();
-        $outsider = User::factory()->create(['role' => UserRole::Participant]);
+        $outsider = $this->createParticipantFor(Organization::factory()->create());
 
         $this->actingAs($outsider)
             ->get(route('teams.show', $team))
