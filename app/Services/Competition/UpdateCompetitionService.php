@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Competition;
 
+use App\Enums\RegistrationMode;
 use App\Models\Competition;
 
 class UpdateCompetitionService
@@ -18,6 +19,10 @@ class UpdateCompetitionService
      *     registration_starts_at?: string|null,
      *     registration_ends_at?: string|null,
      *     max_participants?: int|null,
+     *     registration_mode?: string,
+     *     min_team_size?: int|null,
+     *     max_team_size?: int|null,
+     *     requires_coach?: bool,
      * }  $data
      */
     public function execute(Competition $competition, array $data): Competition
@@ -36,9 +41,43 @@ class UpdateCompetitionService
             $attributes['slug'] = $data['slug'];
         }
 
+        if ($competition->isDraft() && array_key_exists('registration_mode', $data)) {
+            $attributes = array_merge($attributes, $this->registrationAttributes($data));
+        }
+
         $competition->fill($attributes);
         $competition->save();
 
         return $competition;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{
+     *     registration_mode: RegistrationMode,
+     *     min_team_size: int|null,
+     *     max_team_size: int|null,
+     *     requires_coach: bool,
+     * }
+     */
+    private function registrationAttributes(array $data): array
+    {
+        $mode = RegistrationMode::from($data['registration_mode']);
+
+        if (! $mode->allowsTeams()) {
+            return [
+                'registration_mode' => $mode,
+                'min_team_size' => null,
+                'max_team_size' => null,
+                'requires_coach' => false,
+            ];
+        }
+
+        return [
+            'registration_mode' => $mode,
+            'min_team_size' => $data['min_team_size'] ?? null,
+            'max_team_size' => $data['max_team_size'] ?? null,
+            'requires_coach' => (bool) ($data['requires_coach'] ?? false),
+        ];
     }
 }

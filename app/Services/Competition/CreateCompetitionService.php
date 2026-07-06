@@ -6,6 +6,7 @@ namespace App\Services\Competition;
 
 use App\Enums\CategoryStatus;
 use App\Enums\CompetitionStatus;
+use App\Enums\RegistrationMode;
 use App\Models\Competition;
 use App\Models\CompetitionCategory;
 use App\Models\Scopes\OrganizationScope;
@@ -25,6 +26,10 @@ class CreateCompetitionService
      *     registration_starts_at?: string|null,
      *     registration_ends_at?: string|null,
      *     max_participants?: int|null,
+     *     registration_mode?: string,
+     *     min_team_size?: int|null,
+     *     max_team_size?: int|null,
+     *     requires_coach?: bool,
      *     organization_id?: int|null,
      * }  $data
      */
@@ -48,6 +53,7 @@ class CreateCompetitionService
                 'registration_starts_at' => $data['registration_starts_at'] ?? null,
                 'registration_ends_at' => $data['registration_ends_at'] ?? null,
                 'max_participants' => $data['max_participants'] ?? null,
+                ...$this->registrationAttributes($data),
             ]);
 
             CompetitionCategory::query()->create([
@@ -79,5 +85,37 @@ class CreateCompetitionService
         }
 
         return $slug;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{
+     *     registration_mode: RegistrationMode,
+     *     min_team_size: int|null,
+     *     max_team_size: int|null,
+     *     requires_coach: bool,
+     * }
+     */
+    private function registrationAttributes(array $data): array
+    {
+        $mode = isset($data['registration_mode'])
+            ? RegistrationMode::from($data['registration_mode'])
+            : RegistrationMode::Individual;
+
+        if (! $mode->allowsTeams()) {
+            return [
+                'registration_mode' => $mode,
+                'min_team_size' => null,
+                'max_team_size' => null,
+                'requires_coach' => false,
+            ];
+        }
+
+        return [
+            'registration_mode' => $mode,
+            'min_team_size' => $data['min_team_size'] ?? null,
+            'max_team_size' => $data['max_team_size'] ?? null,
+            'requires_coach' => (bool) ($data['requires_coach'] ?? false),
+        ];
     }
 }
