@@ -150,6 +150,60 @@ This log captures significant decisions, their context, and their consequences. 
 
 ---
 
+## ADR-0017 — Team scoped to Competition, not Category
+
+- **Status:** Accepted
+- **Context:** Sprint 3 domain research. Teams could attach to Competition (event-wide) or Category (per track). Registration in Sprint 4 links to `category_id`.
+- **Decision:** `Team` belongs to `competition_id` only. Category selection happens at registration time in Sprint 4.
+- **Consequences:** One roster per event; no duplicate teams per track. Simpler Sprint 3 scope. Registration module must reference either `user_id` (individual) or `team_id` (team) plus `category_id`.
+
+---
+
+## ADR-0018 — Participant identity as User + ParticipantProfile
+
+- **Status:** Accepted
+- **Context:** Sprint 3 needs participant-specific fields (bio, institution) without a separate login entity.
+- **Decision:** Reuse existing `User` with role `participant`. Add optional 1:1 `participant_profiles` table. Do **not** create a separate `Participant` model or auth guard.
+- **Consequences:** Consistent with Sprint 1 identity (ADR-0006). Profile completeness checks reference `participant_profiles` existence. Coaches and organizers use the same `users` table.
+
+---
+
+## ADR-0019 — One active team per user per competition
+
+- **Status:** Accepted
+- **Context:** A user joining multiple teams in the same competition creates registration and scoring conflicts.
+- **Decision:** Enforce at service layer (and optionally DB check): a user may have at most one `team_members` row with `status = active` per `competition_id`.
+- **Consequences:** Accept-invitation and create-team services must query across teams in the competition. Clear error messages for users already on a roster.
+
+---
+
+## ADR-0020 — Team invitations limited to existing org users (Sprint 3)
+
+- **Status:** Accepted
+- **Context:** Full guest-invite flow (email → account creation → accept) adds significant scope. Sprint 3 MVP targets org-internal hackathons.
+- **Decision:** `SendTeamInvitationService` resolves invitee by email **within the competition's organization** only. `invited_user_id` is always set. No outbound email in Sprint 3 — invitation appears in the invitee's in-app inbox.
+- **Consequences:** Fast MVP. Guest invites and mail notifications deferred to Sprint 4. `team_invitations.email` is denormalized for display.
+
+---
+
+## ADR-0021 — Team approval by organizer before registration
+
+- **Status:** Accepted
+- **Context:** Organizers need to vet team rosters before official registration opens.
+- **Decision:** Team status flow: `forming` → `pending_approval` → `approved` | `rejected`. Only **organizers** (same org) may approve/reject. Committee role deferred. Only `approved` teams are eligible for Sprint 4 team registration.
+- **Consequences:** Extra organizer UI step. `SubmitTeamForApprovalService` validates min roster size. Individual-mode competitions skip team approval entirely.
+
+---
+
+## ADR-0022 — OrganizationScope on Team; related models scoped via parent
+
+- **Status:** Accepted
+- **Context:** Sprint 3 introduces team-domain models. Tenant isolation must match Sprint 2 patterns (ADR-0016).
+- **Decision:** Apply `OrganizationScope` to `Team` (via `competition.organization_id`). `TeamMember`, `TeamInvitation`, and `ParticipantProfile` have no `organization_id`; isolation enforced through parent team or user in policies/services.
+- **Consequences:** No redundant `organization_id` on child tables. Policies resolve org via `team.competition` using `withoutGlobalScope` when needed.
+
+---
+
 ## Superseded / historical notes
 
 - Early roadmap drafts assumed `spatie/laravel-permission` and invite-only registration for Sprint 1. Both were changed before implementation: roles are a PHP enum (ADR-0006) and self-serve organization signup is enabled (see [ROADMAP.md](ROADMAP.md)). Invite flow is deferred.
