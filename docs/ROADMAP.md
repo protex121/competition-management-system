@@ -89,12 +89,12 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 
 **Goal:** Participants build profiles and teams; organizers approve teams. Prepares Sprint 4 registration — **no `registrations` table in this sprint**.
 
-**Domain research:** 🔄 [#22](https://github.com/protex121/competition-management-system/issues/22) — [TEAM_PARTICIPANT_RESEARCH.md](TEAM_PARTICIPANT_RESEARCH.md)  
-**Design doc:** ⏳ [#23](https://github.com/protex121/competition-management-system/issues/23)
+**Domain research:** ✅ [#22](https://github.com/protex121/competition-management-system/issues/22) — [TEAM_PARTICIPANT_RESEARCH.md](TEAM_PARTICIPANT_RESEARCH.md)  
+**Design doc:** 🔄 [#23](https://github.com/protex121/competition-management-system/issues/23) — [TEAM_PARTICIPANT_DESIGN.md](TEAM_PARTICIPANT_DESIGN.md)
 
 ### Research & Design
 
-- [ ] Domain research & decisions ([#22](https://github.com/protex121/competition-management-system/issues/22))
+- [x] Domain research & decisions ([#22](https://github.com/protex121/competition-management-system/issues/22))
 - [ ] `TEAM_PARTICIPANT_DESIGN.md` + ADRs ([#23](https://github.com/protex121/competition-management-system/issues/23))
 
 ### Foundation

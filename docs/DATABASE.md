@@ -18,9 +18,16 @@ erDiagram
     ORGANIZATIONS ||--o{ USERS : "has many"
     ORGANIZATIONS ||--o{ COMPETITIONS : "has many"
     COMPETITIONS ||--o{ COMPETITION_CATEGORIES : "has many"
-    COMPETITION_CATEGORIES ||--o{ REGISTRATIONS : "Sprint 3"
+    COMPETITIONS ||--o{ TEAMS : "Sprint 3"
+    USERS ||--|| PARTICIPANT_PROFILES : "1:1, Sprint 3"
+    USERS ||--o{ TEAM_MEMBERS : "Sprint 3"
+    TEAMS ||--o{ TEAM_MEMBERS : "has many"
+    TEAMS ||--o{ TEAM_INVITATIONS : "has many"
+    USERS ||--o{ TEAM_INVITATIONS : "invited"
+    COMPETITION_CATEGORIES ||--o{ REGISTRATIONS : "Sprint 4"
+    USERS ||--o{ REGISTRATIONS : "Sprint 4"
+    TEAMS ||--o{ REGISTRATIONS : "Sprint 4, optional"
     COMPETITIONS ||--o{ SUBMISSIONS : "planned"
-    USERS ||--o{ REGISTRATIONS : "Sprint 3"
     USERS ||--o{ SUBMISSIONS : "planned"
     SUBMISSIONS ||--o{ SCORES : "planned"
     USERS ||--o{ SCORES : "judges, planned"
@@ -108,6 +115,10 @@ Full design: [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md).
 | `starts_at` / `ends_at` | timestamp, nullable | Event schedule |
 | `registration_starts_at` / `registration_ends_at` | timestamp, nullable | Default registration window |
 | `max_participants` | unsigned int, nullable | Optional global capacity |
+| `registration_mode` | string, nullable | *(Sprint 3)* `RegistrationMode`: individual/team/both |
+| `min_team_size` | unsigned small int, nullable | *(Sprint 3)* Min roster when team mode |
+| `max_team_size` | unsigned small int, nullable | *(Sprint 3)* Max roster when team mode |
+| `requires_coach` | boolean, default false | *(Sprint 3, P2)* Coach required before approval |
 | timestamps + `deleted_at` | | Soft delete |
 
 ### `competition_categories`
@@ -126,25 +137,81 @@ Full design: [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md).
 | `is_default` | boolean | `true` for auto-created General |
 | timestamps + `deleted_at` | | Soft delete |
 
-### Other planned tables
+## Tables (Sprint 3 — planned)
 
-### `registrations` *(Sprint 3)*
+Full design: [TEAM_PARTICIPANT_DESIGN.md](TEAM_PARTICIPANT_DESIGN.md).
 
-Links a user (or team) to a **competition category**, with status and deadline/capacity enforcement.
+### `participant_profiles`
 
-### `teams` *(Sprint 3)*
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint unsigned, PK | |
+| `user_id` | FK → `users.id` | Unique; cascade on delete |
+| `bio` | text, nullable | |
+| `phone` | string, nullable | |
+| `institution` | string, nullable | |
+| timestamps | | |
 
-Optional grouping of participants within a competition.
+### `teams`
 
-### `submissions` *(Sprint 4)*
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint unsigned, PK | |
+| `competition_id` | FK → `competitions.id` | Cascade on delete |
+| `name` | string | Unique per competition: `(competition_id, name)` |
+| `captain_user_id` | FK → `users.id` | Denormalized; synced with `team_members` |
+| `coach_user_id` | FK → `users.id`, nullable | Optional coach (P2) |
+| `status` | string | `TeamStatus`: forming/pending_approval/approved/rejected |
+| `rejection_reason` | text, nullable | |
+| `submitted_at` / `approved_at` | timestamp, nullable | Approval workflow |
+| timestamps + `deleted_at` | | Soft delete |
+
+### `team_members`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint unsigned, PK | |
+| `team_id` | FK → `teams.id` | Cascade on delete |
+| `user_id` | FK → `users.id` | Cascade on delete |
+| `role` | string | `TeamMemberRole`: captain/member |
+| `status` | string | `TeamMemberStatus`: active/removed |
+| `joined_at` | timestamp | |
+| timestamps | | |
+
+**Unique:** `(team_id, user_id)`.
+
+### `team_invitations`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint unsigned, PK | |
+| `team_id` | FK → `teams.id` | Cascade on delete |
+| `invited_by_user_id` | FK → `users.id` | Captain or organizer |
+| `invited_user_id` | FK → `users.id` | Existing org user only (Sprint 3) |
+| `email` | string | Denormalized for display |
+| `token` | string(64) | Unique opaque token |
+| `status` | string | `InvitationStatus` |
+| `expires_at` | timestamp | Default 7 days |
+| `responded_at` | timestamp, nullable | |
+| timestamps | | |
+
+---
+
+## Tables (Sprint 4+ — planned)
+
+### `registrations` *(Sprint 4)*
+
+Links a user (solo) or **approved team** to a **competition category**, with status and deadline/capacity enforcement.
+
+### `submissions` *(Sprint 5)*
 
 Participant work: title, description, files/links, finalized state, deadline enforcement.
 
-### `rubrics` / `rubric_criteria` *(Sprint 5)*
+### `rubrics` / `rubric_criteria` *(Sprint 6)*
 
 Scoring structure for a competition.
 
-### `scores` *(Sprint 5)*
+### `scores` *(Sprint 6)*
 
 A judge's score for a submission against a criterion; a judge cannot score their own submission.
 
@@ -178,3 +245,4 @@ Run with `php artisan migrate --seed`. These are local development credentials o
 - [ARCHITECTURE.md](ARCHITECTURE.md) — how tenancy and scoping work
 - [DECISIONS.md](DECISIONS.md) — architectural decision records
 - [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md) — Sprint 2 competition module design
+- [TEAM_PARTICIPANT_DESIGN.md](TEAM_PARTICIPANT_DESIGN.md) — Sprint 3 team & participant module design

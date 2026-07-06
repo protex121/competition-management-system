@@ -1,8 +1,8 @@
 # Team & Participant — Domain Research (Sprint 3)
 
-**Status:** Approved (Opsi A, 2026-07-06)  
-**GitHub Issue:** [#22](https://github.com/protex121/competition-management-system/issues/22)  
-**Next step:** Issue [#23](https://github.com/protex121/competition-management-system/issues/23) — design document + ADRs
+**Status:** Approved (Opsi A, 2026-07-06) — merged via PR #41  
+**GitHub Issue:** [#22](https://github.com/protex121/competition-management-system/issues/22) (closed)  
+**Design doc:** [TEAM_PARTICIPANT_DESIGN.md](TEAM_PARTICIPANT_DESIGN.md) (Issue [#23](https://github.com/protex121/competition-management-system/issues/23))
 
 Domain research for Sprint 3 — Team & Participant Management. This document locks decisions before schema and implementation work. Sprint 2 delivered the competition container; Sprint 3 introduces people and teams; Sprint 4 will add official registration to categories.
 
