@@ -9,6 +9,7 @@ use App\Http\Requests\Team\StoreTeamRequest;
 use App\Http\Requests\Team\UpdateTeamRequest;
 use App\Models\Competition;
 use App\Models\Team;
+use App\Models\TeamInvitation;
 use App\Models\TeamMember;
 use App\Services\Team\CreateTeamService;
 use App\Services\Team\DeleteTeamService;
@@ -99,7 +100,14 @@ class TeamController extends Controller
                         'email' => $member->user->email,
                     ],
                 ]),
-                'pending_invitations_count' => $team->invitations->count(),
+                'pending_invitations' => $team->invitations->map(fn (TeamInvitation $invitation) => [
+                    'id' => $invitation->id,
+                    'email' => $invitation->email,
+                    'expires_at' => $invitation->expires_at->toISOString(),
+                    'can' => [
+                        'revoke' => $user->can('revoke', $invitation),
+                    ],
+                ]),
             ],
             'can' => [
                 'update' => $user->can('update', $team),

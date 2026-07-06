@@ -27,6 +27,10 @@ const form = useForm({
     name: props.team.name,
 });
 
+const inviteForm = useForm({
+    email: '',
+});
+
 const submit = () => {
     form.put(route('teams.update', props.team.id), {
         preserveScroll: true,
@@ -39,6 +43,19 @@ const destroy = () => {
     }
 
     router.delete(route('teams.destroy', props.team.id));
+};
+
+const sendInvite = () => {
+    inviteForm.post(route('teams.invitations.store', props.team.id), {
+        preserveScroll: true,
+        onSuccess: () => inviteForm.reset(),
+    });
+};
+
+const revokeInvite = (invitationId: number) => {
+    router.delete(route('teams.invitations.destroy', [props.team.id, invitationId]), {
+        preserveScroll: true,
+    });
 };
 
 const formatStatus = (status: string): string =>
@@ -126,9 +143,42 @@ const formatRole = (role: string): string => (role === 'captain' ? 'Captain' : '
                             </li>
                             <li v-if="team.members.length === 0" class="px-6 py-4 text-sm text-muted-foreground">No members yet.</li>
                         </ul>
-                        <p v-if="team.pending_invitations_count > 0" class="border-t px-6 py-3 text-xs text-muted-foreground">
-                            {{ team.pending_invitations_count }} pending invitation(s)
+                        <p v-if="team.pending_invitations.length > 0" class="border-t px-6 py-3 text-xs text-muted-foreground">
+                            {{ team.pending_invitations.length }} pending invitation(s)
                         </p>
+                    </CardContent>
+                </Card>
+
+                <Card v-if="can.invite">
+                    <CardHeader>
+                        <CardTitle>Invite member</CardTitle>
+                    </CardHeader>
+                    <CardContent class="space-y-4">
+                        <form @submit.prevent="sendInvite" class="flex gap-2">
+                            <div class="grid flex-1 gap-2">
+                                <Label for="email" class="sr-only">Email</Label>
+                                <Input id="email" v-model="inviteForm.email" type="email" placeholder="colleague@example.com" required />
+                                <InputError :message="inviteForm.errors.email" />
+                            </div>
+                            <Button type="submit" :disabled="inviteForm.processing">Send</Button>
+                        </form>
+                        <ul v-if="team.pending_invitations.length > 0" class="divide-y rounded-md border">
+                            <li
+                                v-for="invitation in team.pending_invitations"
+                                :key="invitation.id"
+                                class="flex items-center justify-between px-4 py-2 text-sm"
+                            >
+                                <span>{{ invitation.email }}</span>
+                                <Button
+                                    v-if="invitation.can?.revoke"
+                                    variant="ghost"
+                                    size="sm"
+                                    @click="revokeInvite(invitation.id)"
+                                >
+                                    Revoke
+                                </Button>
+                            </li>
+                        </ul>
                     </CardContent>
                 </Card>
             </div>
