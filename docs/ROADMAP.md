@@ -112,7 +112,7 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 
 - [x] Team CRUD services ([#29](https://github.com/protex121/competition-management-system/issues/29))
 - [x] Captain transfer + member removal ([#30](https://github.com/protex121/competition-management-system/issues/30))
-- [ ] Participant team UI ([#31](https://github.com/protex121/competition-management-system/issues/31))
+- [x] Participant team UI ([#31](https://github.com/protex121/competition-management-system/issues/31))
 
 ### Invitations
 

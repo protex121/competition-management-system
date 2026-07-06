@@ -145,4 +145,61 @@ export interface PaginatedCompetitions<T> {
     };
 }
 
+export interface TeamMemberUser {
+    id: number;
+    name: string;
+    email: string;
+}
+
+export interface TeamMemberSummary {
+    id: number;
+    role: string;
+    user: TeamMemberUser;
+}
+
+export interface TeamCaptain {
+    id: number;
+    name: string;
+}
+
+export interface TeamSummary {
+    id: number;
+    name: string;
+    status: string;
+    captain_user_id?: number;
+    captain?: TeamCaptain | null;
+    members?: TeamMemberSummary[];
+}
+
+export interface TeamDetail extends TeamSummary {
+    rejection_reason: string | null;
+    submitted_at: string | null;
+    approved_at: string | null;
+    competition: {
+        id: number;
+        name: string;
+    };
+    members: TeamMemberSummary[];
+    pending_invitations_count: number;
+}
+
+export interface TeamPermissions {
+    update: boolean;
+    delete: boolean;
+    manageMembers: boolean;
+    invite: boolean;
+    submit: boolean;
+}
+
+export interface PaginatedTeams<T> {
+    data: T[];
+    links: PaginationLink[];
+    meta?: {
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+    };
+}
+
 export type BreadcrumbItemType = BreadcrumbItem;
