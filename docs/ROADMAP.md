@@ -138,6 +138,16 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 
 - [x] Feature test consolidation ([#40](https://github.com/protex121/competition-management-system/issues/40))
 
+### UX closure (post-Sprint 3)
+
+- [x] Participant competition browse + navigation ([#62](https://github.com/protex121/competition-management-system/issues/62))
+- [ ] Team membership management UI ([#63](https://github.com/protex121/competition-management-system/issues/63))
+- [ ] Coach assignment UI ([#64](https://github.com/protex121/competition-management-system/issues/64))
+- [ ] Organizer team review link ([#65](https://github.com/protex121/competition-management-system/issues/65))
+- [ ] Public page participation CTA ([#66](https://github.com/protex121/competition-management-system/issues/66))
+
+See [SPRINT3_UX_CLOSURE.md](SPRINT3_UX_CLOSURE.md).
+
 ---
 
 ## Sprint 4 — Registration Management

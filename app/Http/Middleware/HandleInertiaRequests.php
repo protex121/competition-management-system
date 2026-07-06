@@ -2,6 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\InvitationStatus;
+use App\Enums\UserRole;
+use App\Models\TeamInvitation;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -48,6 +51,22 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
             ],
+            'pendingInvitationsCount' => fn () => $this->pendingInvitationsCount($request),
         ]);
+    }
+
+    private function pendingInvitationsCount(Request $request): int
+    {
+        $user = $request->user();
+
+        if ($user === null || $user->role !== UserRole::Participant) {
+            return 0;
+        }
+
+        return TeamInvitation::query()
+            ->where('invited_user_id', $user->id)
+            ->where('status', InvitationStatus::Pending)
+            ->where('expires_at', '>', now())
+            ->count();
     }
 }
