@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Team\TeamApprovalController;
 use App\Http\Controllers\Team\TeamController;
 use App\Http\Controllers\Team\TeamInvitationController;
 use Illuminate\Support\Facades\Route;
@@ -24,4 +25,13 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
 
     Route::post('teams/{team}/invitations', [TeamInvitationController::class, 'store'])->name('teams.invitations.store');
     Route::delete('teams/{team}/invitations/{invitation}', [TeamInvitationController::class, 'destroy'])->name('teams.invitations.destroy');
+
+    Route::post('teams/{team}/submit', [TeamApprovalController::class, 'submit'])->name('teams.submit');
+});
+
+Route::middleware(['auth', 'verified', 'active', 'organizer'])->group(function () {
+    Route::get('competitions/{competition}/teams/review', [TeamApprovalController::class, 'review'])
+        ->name('competitions.teams.review');
+    Route::post('teams/{team}/approve', [TeamApprovalController::class, 'approve'])->name('teams.approve');
+    Route::post('teams/{team}/reject', [TeamApprovalController::class, 'reject'])->name('teams.reject');
 });

@@ -58,6 +58,10 @@ const revokeInvite = (invitationId: number) => {
     });
 };
 
+const submitForApproval = () => {
+    router.post(route('teams.submit', props.team.id));
+};
+
 const formatStatus = (status: string): string =>
     status
         .split('_')
@@ -187,6 +191,7 @@ const formatRole = (role: string): string => (role === 'captain' ? 'Captain' : '
                 <Button as-child variant="outline">
                     <Link :href="route('competitions.teams.index', team.competition.id)">Back to teams</Link>
                 </Button>
+                <Button v-if="can.submit" @click="submitForApproval">Submit for approval</Button>
                 <Button v-if="can.delete" variant="destructive" size="sm" @click="destroy">
                     <Trash2 class="mr-2 h-4 w-4" />
                     Delete team
