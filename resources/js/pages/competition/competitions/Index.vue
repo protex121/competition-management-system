@@ -2,6 +2,7 @@
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem, type Competition, type Organization, type PaginatedCompetitions } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/vue3';
@@ -48,14 +49,17 @@ const organizationName = (organization: Organization | null | undefined): string
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4">
-            <div class="flex items-center justify-between">
-                <Heading title="Competitions" description="Manage competitions in your organization" />
-                <Button as-child>
-                    <Link :href="route('competitions.create')">
-                        <Plus class="mr-2 h-4 w-4" />
-                        New competition
-                    </Link>
-                </Button>
+            <div class="mb-8">
+                <div class="flex items-start justify-between gap-4">
+                    <Heading title="Competitions" description="Manage competitions in your organization" :show-separator="false" />
+                    <Button as-child class="shrink-0">
+                        <Link :href="route('competitions.create')">
+                            <Plus class="mr-2 h-4 w-4" />
+                            New competition
+                        </Link>
+                    </Button>
+                </div>
+                <Separator class="mt-6" />
             </div>
 
             <Card>
