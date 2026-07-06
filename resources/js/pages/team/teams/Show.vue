@@ -7,13 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { type BreadcrumbItem, type TeamDetail, type TeamPermissions } from '@/types';
+import { type BreadcrumbItem, type CoachOption, type TeamDetail, type TeamPermissions } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { LoaderCircle, Trash2 } from 'lucide-vue-next';
 
 interface Props {
     team: TeamDetail;
     can: TeamPermissions;
+    availableCoaches: CoachOption[];
 }
 
 const props = defineProps<Props>();
@@ -29,6 +30,10 @@ const form = useForm({
 
 const inviteForm = useForm({
     email: '',
+});
+
+const coachForm = useForm({
+    user_id: '' as string | number,
 });
 
 const submit = () => {
@@ -84,6 +89,21 @@ const leaveTeam = () => {
     }
 
     router.post(route('teams.leave', props.team.id));
+};
+
+const assignCoach = () => {
+    coachForm.post(route('teams.coach.store', props.team.id), {
+        preserveScroll: true,
+        onSuccess: () => coachForm.reset(),
+    });
+};
+
+const removeCoach = () => {
+    if (!confirm('Remove the assigned coach?')) {
+        return;
+    }
+
+    router.delete(route('teams.coach.destroy', props.team.id), { preserveScroll: true });
 };
 
 const formatStatus = (status: string): string =>
@@ -225,6 +245,46 @@ const formatRole = (role: string): string => (role === 'captain' ? 'Captain' : '
                                 </Button>
                             </li>
                         </ul>
+                    </CardContent>
+                </Card>
+
+                <Card v-if="team.coach || can.assignCoach">
+                    <CardHeader>
+                        <CardTitle>Coach</CardTitle>
+                    </CardHeader>
+                    <CardContent class="space-y-4">
+                        <div v-if="team.coach" class="text-sm">
+                            <p class="font-medium">{{ team.coach.name }}</p>
+                            <p class="text-muted-foreground">{{ team.coach.email }}</p>
+                        </div>
+                        <p v-else class="text-sm text-muted-foreground">No coach assigned yet.</p>
+
+                        <form v-if="can.assignCoach && !team.coach" @submit.prevent="assignCoach" class="flex gap-2">
+                            <div class="grid flex-1 gap-2">
+                                <Label for="coach" class="sr-only">Coach</Label>
+                                <select
+                                    id="coach"
+                                    v-model="coachForm.user_id"
+                                    required
+                                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                >
+                                    <option value="" disabled>Select a coach</option>
+                                    <option v-for="coach in availableCoaches" :key="coach.id" :value="coach.id">
+                                        {{ coach.name }} ({{ coach.email }})
+                                    </option>
+                                </select>
+                                <InputError :message="coachForm.errors.user_id" />
+                            </div>
+                            <Button type="submit" :disabled="coachForm.processing || availableCoaches.length === 0">Assign</Button>
+                        </form>
+
+                        <p v-if="can.assignCoach && availableCoaches.length === 0 && !team.coach" class="text-sm text-muted-foreground">
+                            No coaches available in your organization.
+                        </p>
+
+                        <Button v-if="can.assignCoach && team.coach" variant="outline" size="sm" @click="removeCoach">
+                            Remove coach
+                        </Button>
                     </CardContent>
                 </Card>
             </div>

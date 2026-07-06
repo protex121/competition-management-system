@@ -13,6 +13,7 @@ use App\Models\TeamInvitation;
 use App\Models\TeamMember;
 use App\Services\Team\CreateTeamService;
 use App\Services\Team\DeleteTeamService;
+use App\Services\Team\ListOrganizationCoachesService;
 use App\Services\Team\ListTeamsService;
 use App\Services\Team\ShowTeamService;
 use App\Services\Team\UpdateTeamService;
@@ -70,13 +71,20 @@ class TeamController extends Controller
         return to_route('teams.show', $team);
     }
 
-    public function show(Request $request, Team $team, ShowTeamService $service): Response
-    {
+    public function show(
+        Request $request,
+        Team $team,
+        ShowTeamService $service,
+        ListOrganizationCoachesService $coachesService,
+    ): Response {
         $team = $service->execute($request->user(), $team);
         $user = $request->user();
 
         $membership = $team->members->first(fn (TeamMember $member) => $member->user_id === $user->id);
         $canLeave = $membership !== null && ! $membership->isCaptain();
+        $availableCoaches = $user->can('assignCoach', $team)
+            ? $coachesService->execute($team->competition)->values()->all()
+            : [];
 
         return Inertia::render('team/teams/Show', [
             'team' => [
@@ -89,6 +97,11 @@ class TeamController extends Controller
                 'captain' => $team->captain ? [
                     'id' => $team->captain->id,
                     'name' => $team->captain->name,
+                ] : null,
+                'coach' => $team->coach ? [
+                    'id' => $team->coach->id,
+                    'name' => $team->coach->name,
+                    'email' => $team->coach->email,
                 ] : null,
                 'competition' => [
                     'id' => $team->competition->id,
@@ -118,6 +131,7 @@ class TeamController extends Controller
                     ],
                 ]),
             ],
+            'availableCoaches' => $availableCoaches,
             'can' => [
                 'update' => $user->can('update', $team),
                 'delete' => $user->can('delete', $team),
@@ -125,6 +139,7 @@ class TeamController extends Controller
                 'invite' => $user->can('invite', $team),
                 'submit' => $user->can('submit', $team),
                 'leave' => $canLeave,
+                'assignCoach' => $user->can('assignCoach', $team),
             ],
         ]);
     }

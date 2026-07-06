@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Team\TeamApprovalController;
+use App\Http\Controllers\Team\TeamCoachController;
 use App\Http\Controllers\Team\TeamController;
 use App\Http\Controllers\Team\TeamInvitationController;
 use App\Http\Controllers\Team\TeamMemberController;
@@ -34,6 +35,9 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::delete('teams/{team}/members/{member}', [TeamMemberController::class, 'destroy'])
         ->name('teams.members.destroy');
     Route::post('teams/{team}/leave', [TeamMemberController::class, 'leave'])->name('teams.leave');
+
+    Route::post('teams/{team}/coach', [TeamCoachController::class, 'store'])->name('teams.coach.store');
+    Route::delete('teams/{team}/coach', [TeamCoachController::class, 'destroy'])->name('teams.coach.destroy');
 });
 
 Route::middleware(['auth', 'verified', 'active', 'organizer'])->group(function () {

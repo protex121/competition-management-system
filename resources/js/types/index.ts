@@ -168,6 +168,18 @@ export interface TeamCaptain {
     name: string;
 }
 
+export interface TeamCoach {
+    id: number;
+    name: string;
+    email: string;
+}
+
+export interface CoachOption {
+    id: number;
+    name: string;
+    email: string;
+}
+
 export interface TeamSummary {
     id: number;
     name: string;
@@ -190,6 +202,7 @@ export interface TeamDetail extends TeamSummary {
     rejection_reason: string | null;
     submitted_at: string | null;
     approved_at: string | null;
+    coach?: TeamCoach | null;
     competition: {
         id: number;
         name: string;
@@ -205,6 +218,7 @@ export interface TeamPermissions {
     invite: boolean;
     submit: boolean;
     leave: boolean;
+    assignCoach: boolean;
 }
 
 export interface PaginatedTeams<T> {
