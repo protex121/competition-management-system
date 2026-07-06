@@ -6,9 +6,11 @@ namespace Tests\Feature\Competition;
 
 use App\Enums\CategoryStatus;
 use App\Enums\CompetitionStatus;
+use App\Enums\UserRole;
 use App\Models\Competition;
 use App\Models\CompetitionCategory;
 use App\Models\Organization;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\Competition\Concerns\CreatesCompetitionFixtures;
 use Tests\TestCase;
@@ -179,6 +181,51 @@ class PublicCompetitionTest extends TestCase
                 ->where('competition.min_team_size', 2)
                 ->where('competition.max_team_size', 4)
                 ->where('competition.requires_coach', true)
+            );
+    }
+
+    public function test_public_page_shows_guest_participation_cta(): void
+    {
+        $organization = Organization::factory()->create(['slug' => 'acme-corp']);
+        $competition = Competition::factory()->teamMode()->published()->create([
+            'organization_id' => $organization->id,
+            'slug' => 'open-event',
+        ]);
+
+        $this->get(route('events.competitions.show', [
+            'organization' => $organization->slug,
+            'competition' => $competition->slug,
+        ]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('participation.visible', true)
+                ->where('participation.status', 'guest')
+                ->has('participation.login_url')
+                ->has('participation.register_url')
+            );
+    }
+
+    public function test_public_page_shows_join_team_cta_for_participant(): void
+    {
+        $organization = Organization::factory()->create(['slug' => 'acme-corp']);
+        $competition = Competition::factory()->teamMode()->published()->create([
+            'organization_id' => $organization->id,
+            'slug' => 'join-event',
+        ]);
+        $participant = User::factory()->create([
+            'organization_id' => $organization->id,
+            'role' => UserRole::Participant,
+        ]);
+
+        $this->actingAs($participant)
+            ->get(route('events.competitions.show', [
+                'organization' => $organization->slug,
+                'competition' => $competition->slug,
+            ]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('participation.status', 'join_team')
+                ->has('participation.action_url')
             );
     }
 }

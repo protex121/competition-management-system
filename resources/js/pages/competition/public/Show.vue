@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { type CompetitionCategory, type Organization } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
 
@@ -30,6 +31,17 @@ interface Props {
     organization: Pick<Organization, 'id' | 'name' | 'slug'>;
     competition: PublicCompetition;
     categories: PublicCategory[];
+    participation: ParticipationCta;
+}
+
+interface ParticipationCta {
+    visible: boolean;
+    status?: string;
+    message?: string;
+    login_url?: string;
+    register_url?: string;
+    action_url?: string;
+    action_label?: string;
 }
 
 defineProps<Props>();
@@ -103,6 +115,28 @@ const statusClass = (status: string): string => {
         </header>
 
         <main class="mx-auto flex max-w-3xl flex-col gap-6 p-4">
+            <Card v-if="participation.visible">
+                <CardHeader>
+                    <CardTitle>Participate</CardTitle>
+                </CardHeader>
+                <CardContent class="space-y-4">
+                    <p v-if="participation.message" class="text-sm text-muted-foreground">{{ participation.message }}</p>
+                    <div class="flex flex-wrap gap-3">
+                        <Button v-if="participation.action_url" as-child>
+                            <Link :href="participation.action_url">{{ participation.action_label }}</Link>
+                        </Button>
+                        <template v-if="participation.status === 'guest'">
+                            <Button v-if="participation.login_url" as-child variant="outline">
+                                <Link :href="participation.login_url">Log in</Link>
+                            </Button>
+                            <Button v-if="participation.register_url" as-child variant="secondary">
+                                <Link :href="participation.register_url">Register</Link>
+                            </Button>
+                        </template>
+                    </div>
+                </CardContent>
+            </Card>
+
             <Card v-if="competition.description">
                 <CardHeader>
                     <CardTitle>About</CardTitle>

@@ -9,6 +9,7 @@ use App\Enums\CompetitionStatus;
 use App\Models\Competition;
 use App\Models\Organization;
 use App\Models\Scopes\OrganizationScope;
+use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ShowPublicCompetitionService
@@ -20,7 +21,7 @@ class ShowPublicCompetitionService
      *     categories: array<int, array<string, mixed>>,
      * }
      */
-    public function execute(string $organizationSlug, string $competitionSlug): array
+    public function execute(string $organizationSlug, string $competitionSlug, ?User $user = null): array
     {
         $organization = Organization::query()
             ->where('slug', $organizationSlug)
@@ -85,6 +86,7 @@ class ShowPublicCompetitionService
                 'requires_coach' => $competition->requires_coach,
             ],
             'categories' => $categories,
+            'participation' => (new BuildPublicParticipationCtaService)->execute($user, $competition, $organization),
         ];
     }
 
