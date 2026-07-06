@@ -157,6 +157,10 @@ export interface TeamMemberSummary {
     id: number;
     role: string;
     user: TeamMemberUser;
+    can?: {
+        transferCaptain: boolean;
+        remove: boolean;
+    };
 }
 
 export interface TeamCaptain {
@@ -200,6 +204,7 @@ export interface TeamPermissions {
     manageMembers: boolean;
     invite: boolean;
     submit: boolean;
+    leave: boolean;
 }
 
 export interface PaginatedTeams<T> {

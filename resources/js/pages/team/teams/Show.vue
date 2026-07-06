@@ -62,6 +62,30 @@ const submitForApproval = () => {
     router.post(route('teams.submit', props.team.id));
 };
 
+const transferCaptain = (memberId: number) => {
+    if (!confirm('Transfer captaincy to this member?')) {
+        return;
+    }
+
+    router.post(route('teams.members.transfer-captain', [props.team.id, memberId]), {}, { preserveScroll: true });
+};
+
+const removeMember = (memberId: number) => {
+    if (!confirm('Remove this member from the team?')) {
+        return;
+    }
+
+    router.delete(route('teams.members.destroy', [props.team.id, memberId]), { preserveScroll: true });
+};
+
+const leaveTeam = () => {
+    if (!confirm('Leave this team?')) {
+        return;
+    }
+
+    router.post(route('teams.leave', props.team.id));
+};
+
 const formatStatus = (status: string): string =>
     status
         .split('_')
@@ -138,12 +162,30 @@ const formatRole = (role: string): string => (role === 'captain' ? 'Captain' : '
                     </CardHeader>
                     <CardContent class="p-0">
                         <ul class="divide-y">
-                            <li v-for="member in team.members" :key="member.id" class="flex items-center justify-between px-6 py-3 text-sm">
+                            <li v-for="member in team.members" :key="member.id" class="flex items-center justify-between gap-3 px-6 py-3 text-sm">
                                 <div>
                                     <p class="font-medium">{{ member.user.name }}</p>
                                     <p class="text-muted-foreground">{{ member.user.email }}</p>
                                 </div>
-                                <span class="text-xs text-muted-foreground">{{ formatRole(member.role) }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-muted-foreground">{{ formatRole(member.role) }}</span>
+                                    <Button
+                                        v-if="member.can?.transferCaptain"
+                                        variant="outline"
+                                        size="sm"
+                                        @click="transferCaptain(member.id)"
+                                    >
+                                        Make captain
+                                    </Button>
+                                    <Button
+                                        v-if="member.can?.remove"
+                                        variant="ghost"
+                                        size="sm"
+                                        @click="removeMember(member.id)"
+                                    >
+                                        Remove
+                                    </Button>
+                                </div>
                             </li>
                             <li v-if="team.members.length === 0" class="px-6 py-4 text-sm text-muted-foreground">No members yet.</li>
                         </ul>
@@ -192,6 +234,7 @@ const formatRole = (role: string): string => (role === 'captain' ? 'Captain' : '
                     <Link :href="route('competitions.teams.index', team.competition.id)">Back to teams</Link>
                 </Button>
                 <Button v-if="can.submit" @click="submitForApproval">Submit for approval</Button>
+                <Button v-if="can.leave" variant="outline" @click="leaveTeam">Leave team</Button>
                 <Button v-if="can.delete" variant="destructive" size="sm" @click="destroy">
                     <Trash2 class="mr-2 h-4 w-4" />
                     Delete team

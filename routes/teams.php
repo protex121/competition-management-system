@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Team\TeamApprovalController;
 use App\Http\Controllers\Team\TeamController;
 use App\Http\Controllers\Team\TeamInvitationController;
+use App\Http\Controllers\Team\TeamMemberController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'active'])->group(function () {
@@ -27,6 +28,12 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::delete('teams/{team}/invitations/{invitation}', [TeamInvitationController::class, 'destroy'])->name('teams.invitations.destroy');
 
     Route::post('teams/{team}/submit', [TeamApprovalController::class, 'submit'])->name('teams.submit');
+
+    Route::post('teams/{team}/members/{member}/transfer-captain', [TeamMemberController::class, 'transferCaptain'])
+        ->name('teams.members.transfer-captain');
+    Route::delete('teams/{team}/members/{member}', [TeamMemberController::class, 'destroy'])
+        ->name('teams.members.destroy');
+    Route::post('teams/{team}/leave', [TeamMemberController::class, 'leave'])->name('teams.leave');
 });
 
 Route::middleware(['auth', 'verified', 'active', 'organizer'])->group(function () {

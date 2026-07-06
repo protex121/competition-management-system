@@ -75,6 +75,9 @@ class TeamController extends Controller
         $team = $service->execute($request->user(), $team);
         $user = $request->user();
 
+        $membership = $team->members->first(fn (TeamMember $member) => $member->user_id === $user->id);
+        $canLeave = $membership !== null && ! $membership->isCaptain();
+
         return Inertia::render('team/teams/Show', [
             'team' => [
                 'id' => $team->id,
@@ -99,6 +102,12 @@ class TeamController extends Controller
                         'name' => $member->user->name,
                         'email' => $member->user->email,
                     ],
+                    'can' => [
+                        'transferCaptain' => $user->can('manageMembers', $team)
+                            && $member->role->value !== 'captain',
+                        'remove' => $user->can('manageMembers', $team)
+                            && $member->role->value !== 'captain',
+                    ],
                 ]),
                 'pending_invitations' => $team->invitations->map(fn (TeamInvitation $invitation) => [
                     'id' => $invitation->id,
@@ -115,6 +124,7 @@ class TeamController extends Controller
                 'manageMembers' => $user->can('manageMembers', $team),
                 'invite' => $user->can('invite', $team),
                 'submit' => $user->can('submit', $team),
+                'leave' => $canLeave,
             ],
         ]);
     }
