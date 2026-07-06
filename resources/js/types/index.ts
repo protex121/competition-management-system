@@ -171,6 +171,15 @@ export interface TeamSummary {
     members?: TeamMemberSummary[];
 }
 
+export interface TeamInvitationSummary {
+    id: number;
+    email: string;
+    expires_at: string;
+    can?: {
+        revoke: boolean;
+    };
+}
+
 export interface TeamDetail extends TeamSummary {
     rejection_reason: string | null;
     submitted_at: string | null;
@@ -180,7 +189,7 @@ export interface TeamDetail extends TeamSummary {
         name: string;
     };
     members: TeamMemberSummary[];
-    pending_invitations_count: number;
+    pending_invitations: TeamInvitationSummary[];
 }
 
 export interface TeamPermissions {
