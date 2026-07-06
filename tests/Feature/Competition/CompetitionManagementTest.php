@@ -247,6 +247,33 @@ class CompetitionManagementTest extends TestCase
         $this->assertSame(CompetitionStatus::Closed, $competition->fresh()->status);
     }
 
+    public function test_organizer_sees_review_teams_link_on_team_mode_edit_page(): void
+    {
+        [$organization, $organizer] = $this->createOrganizerContext();
+        $competition = Competition::factory()->teamMode()->published()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $this->actingAs($organizer)
+            ->get(route('competitions.edit', $competition))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('can.reviewTeams', true));
+    }
+
+    public function test_organizer_does_not_see_review_teams_link_for_draft_competition(): void
+    {
+        [$organization, $organizer] = $this->createOrganizerContext();
+        $competition = Competition::factory()->teamMode()->create([
+            'organization_id' => $organization->id,
+            'status' => CompetitionStatus::Draft,
+        ]);
+
+        $this->actingAs($organizer)
+            ->get(route('competitions.edit', $competition))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('can.reviewTeams', false));
+    }
+
     // --- Tenant isolation ---
 
     public function test_organizer_cannot_access_competition_from_another_organization(): void

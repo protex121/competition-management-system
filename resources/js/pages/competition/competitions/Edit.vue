@@ -261,6 +261,18 @@ const statusClass = (status: string): string => {
                 </CardContent>
             </Card>
 
+            <Card v-if="can.reviewTeams" class="max-w-2xl">
+                <CardHeader>
+                    <CardTitle>Teams</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p class="mb-4 text-sm text-muted-foreground">Review teams submitted for approval.</p>
+                    <Button as-child variant="outline">
+                        <Link :href="route('competitions.teams.review', competition.id)">Review pending teams</Link>
+                    </Button>
+                </CardContent>
+            </Card>
+
             <Card v-if="can.publish || can.activate || can.close" class="max-w-2xl">
                 <CardHeader>
                     <CardTitle>Lifecycle</CardTitle>

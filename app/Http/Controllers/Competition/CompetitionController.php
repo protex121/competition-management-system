@@ -92,6 +92,10 @@ class CompetitionController extends Controller
                 'activate' => $request->user()->can('activate', $competition),
                 'close' => $request->user()->can('close', $competition),
                 'createCategory' => $request->user()->can('create', [CompetitionCategory::class, $competition]),
+                'reviewTeams' => $request->user()->isOrganizer()
+                    && $competition->allowsTeams()
+                    && ! $competition->isDraft()
+                    && $request->user()->organization_id === $competition->organization_id,
             ],
         ]);
     }
