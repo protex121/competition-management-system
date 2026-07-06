@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DateTimePicker from '@/components/DateTimePicker.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -181,7 +182,7 @@ const statusClass = (status: string): string => {
                 </div>
                 <div class="grid gap-2">
                     <Label for="create-registration-ends">Registration closes</Label>
-                    <Input id="create-registration-ends" v-model="createForm.registration_ends_at" type="datetime-local" />
+                    <DateTimePicker id="create-registration-ends" v-model="createForm.registration_ends_at" />
                     <InputError :message="createForm.errors.registration_ends_at" />
                 </div>
             </div>
@@ -248,7 +249,7 @@ const statusClass = (status: string): string => {
                                     </div>
                                     <div class="grid gap-2">
                                         <Label for="edit-registration-ends">Registration closes</Label>
-                                        <Input id="edit-registration-ends" v-model="editForm.registration_ends_at" type="datetime-local" />
+                                        <DateTimePicker id="edit-registration-ends" v-model="editForm.registration_ends_at" />
                                         <InputError :message="editForm.errors.registration_ends_at" />
                                     </div>
                                 </div>
