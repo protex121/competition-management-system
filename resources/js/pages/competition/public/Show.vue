@@ -14,6 +14,10 @@ interface PublicCompetition {
     registration_starts_at: string | null;
     registration_ends_at: string | null;
     max_participants: number | null;
+    registration_mode: string;
+    min_team_size: number | null;
+    max_team_size: number | null;
+    requires_coach: boolean;
 }
 
 interface PublicCategory extends Pick<CompetitionCategory, 'id' | 'name' | 'slug'> {
@@ -45,6 +49,17 @@ const formatDate = (value: string | null): string => {
         dateStyle: 'medium',
         timeStyle: 'short',
     });
+};
+
+const formatRegistrationMode = (mode: string): string => {
+    switch (mode) {
+        case 'team':
+            return 'Team registration';
+        case 'both':
+            return 'Individual or team registration';
+        default:
+            return 'Individual registration';
+    }
 };
 
 const statusClass = (status: string): string => {
@@ -110,6 +125,17 @@ const statusClass = (status: string): string => {
                         <p class="font-medium">Registration</p>
                         <p class="text-muted-foreground">
                             {{ formatDate(competition.registration_starts_at) }} – {{ formatDate(competition.registration_ends_at) }}
+                        </p>
+                    </div>
+                    <div>
+                        <p class="font-medium">Participation</p>
+                        <p class="text-muted-foreground">{{ formatRegistrationMode(competition.registration_mode) }}</p>
+                        <p
+                            v-if="competition.registration_mode === 'team' || competition.registration_mode === 'both'"
+                            class="mt-1 text-muted-foreground"
+                        >
+                            Team size: {{ competition.min_team_size ?? '?' }}–{{ competition.max_team_size ?? '?' }} members
+                            <span v-if="competition.requires_coach"> · Coach required</span>
                         </p>
                     </div>
                     <div v-if="competition.max_participants">

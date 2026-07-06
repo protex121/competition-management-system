@@ -23,7 +23,7 @@ class PublicCompetitionTest extends TestCase
     public function test_guest_can_view_published_competition(): void
     {
         $organization = Organization::factory()->create(['slug' => 'acme-corp']);
-        $competition = Competition::factory()->published()->create([
+        $competition = Competition::factory()->teamMode()->published()->create([
             'organization_id' => $organization->id,
             'slug' => 'winter-hackathon',
             'name' => 'Winter Hackathon',
@@ -48,6 +48,9 @@ class PublicCompetitionTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('competition/public/Show')
                 ->where('competition.name', 'Winter Hackathon')
+                ->where('competition.registration_mode', 'team')
+                ->where('competition.min_team_size', 2)
+                ->where('competition.max_team_size', 5)
                 ->where('organization.slug', 'acme-corp')
                 ->has('categories', 1)
                 ->where('categories.0.name', 'Junior')
@@ -152,6 +155,30 @@ class PublicCompetitionTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->has('categories', 1)
                 ->where('categories.0.name', 'General')
+            );
+    }
+
+    public function test_public_page_includes_participation_mode_hints(): void
+    {
+        $organization = Organization::factory()->create(['slug' => 'acme-corp']);
+        $competition = Competition::factory()->teamMode()->published()->create([
+            'organization_id' => $organization->id,
+            'slug' => 'team-event',
+            'min_team_size' => 2,
+            'max_team_size' => 4,
+            'requires_coach' => true,
+        ]);
+
+        $this->get(route('events.competitions.show', [
+            'organization' => $organization->slug,
+            'competition' => $competition->slug,
+        ]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('competition.registration_mode', 'team')
+                ->where('competition.min_team_size', 2)
+                ->where('competition.max_team_size', 4)
+                ->where('competition.requires_coach', true)
             );
     }
 }
