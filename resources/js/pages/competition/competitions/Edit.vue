@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import CategoryList from '@/components/Competition/CategoryList.vue';
+import RegistrationSettingsFields from '@/components/Competition/RegistrationSettingsFields.vue';
 import { type BreadcrumbItem, type Competition, type CompetitionPermissions, type ManagedCategory } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
@@ -52,9 +53,25 @@ const form = useForm({
     registration_starts_at: toDatetimeLocal(props.competition.registration_starts_at),
     registration_ends_at: toDatetimeLocal(props.competition.registration_ends_at),
     max_participants: props.competition.max_participants ?? ('' as string | number),
+    registration_mode: props.competition.registration_mode ?? 'individual',
+    min_team_size: props.competition.min_team_size ?? ('' as string | number),
+    max_team_size: props.competition.max_team_size ?? ('' as string | number),
+    requires_coach: props.competition.requires_coach ?? false,
 });
 
 const submit = () => {
+    if (!isDraft.value) {
+        form.transform((data) => {
+            const rest = { ...data };
+            delete rest.registration_mode;
+            delete rest.min_team_size;
+            delete rest.max_team_size;
+            delete rest.requires_coach;
+
+            return rest;
+        });
+    }
+
     form.put(route('competitions.update', props.competition.id), {
         preserveScroll: true,
     });
@@ -113,12 +130,12 @@ const statusClass = (status: string): string => {
             <p v-if="flashSuccess" class="text-sm text-green-600 dark:text-green-400">{{ flashSuccess }}</p>
             <InputError :message="form.errors.status" />
 
-            <Card class="max-w-2xl">
-                <CardHeader>
-                    <CardTitle>Details</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <form @submit.prevent="submit" class="space-y-6">
+            <form @submit.prevent="submit" class="flex max-w-2xl flex-col gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Details</CardTitle>
+                    </CardHeader>
+                    <CardContent class="space-y-6">
                         <div class="grid gap-2">
                             <Label for="name">Name</Label>
                             <Input id="name" v-model="form.name" required :disabled="!can.update" />
@@ -190,28 +207,47 @@ const statusClass = (status: string): string => {
                             />
                             <InputError :message="form.errors.max_participants" />
                         </div>
+                    </CardContent>
+                </Card>
 
-                        <div v-if="can.update" class="flex items-center gap-4">
-                            <Button type="submit" :disabled="form.processing">
-                                <LoaderCircle v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
-                                Save changes
-                            </Button>
-                            <Button as-child variant="outline">
-                                <Link :href="route('competitions.index')">Back to list</Link>
-                            </Button>
-                            <TransitionRoot
-                                :show="form.recentlySuccessful"
-                                enter="transition ease-in-out"
-                                enter-from="opacity-0"
-                                leave="transition ease-in-out"
-                                leave-to="opacity-0"
-                            >
-                                <p class="text-sm text-muted-foreground">Saved.</p>
-                            </TransitionRoot>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Registration settings</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p v-if="!isDraft" class="mb-4 text-sm text-muted-foreground">
+                            Participation mode and team size can only be changed while the competition is in draft status.
+                        </p>
+                        <RegistrationSettingsFields
+                            v-model:registration-mode="form.registration_mode"
+                            v-model:min-team-size="form.min_team_size"
+                            v-model:max-team-size="form.max_team_size"
+                            v-model:requires-coach="form.requires_coach"
+                            :errors="form.errors"
+                            :disabled="!isDraft || !can.update"
+                        />
+                    </CardContent>
+                </Card>
+
+                <div v-if="can.update" class="flex items-center gap-4">
+                    <Button type="submit" :disabled="form.processing">
+                        <LoaderCircle v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        Save changes
+                    </Button>
+                    <Button as-child variant="outline">
+                        <Link :href="route('competitions.index')">Back to list</Link>
+                    </Button>
+                    <TransitionRoot
+                        :show="form.recentlySuccessful"
+                        enter="transition ease-in-out"
+                        enter-from="opacity-0"
+                        leave="transition ease-in-out"
+                        leave-to="opacity-0"
+                    >
+                        <p class="text-sm text-muted-foreground">Saved.</p>
+                    </TransitionRoot>
+                </div>
+            </form>
 
             <Card class="max-w-2xl">
                 <CardHeader>

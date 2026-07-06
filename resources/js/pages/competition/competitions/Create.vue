@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
+import RegistrationSettingsFields from '@/components/Competition/RegistrationSettingsFields.vue';
 import { type BreadcrumbItem, type Organization } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
@@ -36,6 +37,10 @@ const form = useForm({
     registration_starts_at: '',
     registration_ends_at: '',
     max_participants: '' as string | number,
+    registration_mode: 'individual',
+    min_team_size: '' as string | number,
+    max_team_size: '' as string | number,
+    requires_coach: false,
 });
 
 const submit = () => {
@@ -127,6 +132,17 @@ const submit = () => {
                             <Label for="max_participants">Max participants <span class="text-muted-foreground">(optional)</span></Label>
                             <Input id="max_participants" v-model="form.max_participants" type="number" min="1" placeholder="100" />
                             <InputError :message="form.errors.max_participants" />
+                        </div>
+
+                        <div class="border-t pt-6">
+                            <p class="mb-4 text-sm font-medium">Registration settings</p>
+                            <RegistrationSettingsFields
+                                v-model:registration-mode="form.registration_mode"
+                                v-model:min-team-size="form.min_team_size"
+                                v-model:max-team-size="form.max_team_size"
+                                v-model:requires-coach="form.requires_coach"
+                                :errors="form.errors"
+                            />
                         </div>
 
                         <div class="flex items-center gap-4">

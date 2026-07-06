@@ -114,6 +114,10 @@ export interface Competition {
     registration_starts_at: string | null;
     registration_ends_at: string | null;
     max_participants: number | null;
+    registration_mode: string;
+    min_team_size: number | null;
+    max_team_size: number | null;
+    requires_coach: boolean;
     organization_id: number;
     organization?: Organization | null;
     categories?: CompetitionCategory[];

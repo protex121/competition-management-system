@@ -100,7 +100,7 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 ### Foundation
 
 - [x] `participant_profiles`, `teams`, `team_members`, `team_invitations` ([#24](https://github.com/protex121/competition-management-system/issues/24))
-- [ ] `registration_mode` + team size settings on competition ([#25](https://github.com/protex121/competition-management-system/issues/25))
+- [x] `registration_mode` + team size settings on competition ([#25](https://github.com/protex121/competition-management-system/issues/25))
 - [ ] Policies + unit tests ([#26](https://github.com/protex121/competition-management-system/issues/26))
 
 ### Participant
