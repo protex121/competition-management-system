@@ -16,7 +16,7 @@ Closes the gap between implemented backend services/routes and discoverable UI f
 
 ## Implementation order
 
-1. **#62** — Participant competition browse + navigation (sidebar, dashboard, invitation badge)
+1. **#62** ✅ — Participant competition browse + navigation — merged PR #67
 2. **#63** — Team membership UI (transfer captain, remove member, leave)
 3. **#64** — Coach assignment UI on team show
 4. **#65** — Organizer review link on competition edit
