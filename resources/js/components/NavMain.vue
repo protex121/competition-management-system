@@ -8,6 +8,7 @@ interface NavItem {
     title: string;
     href: string;
     icon: Component;
+    badge?: number;
 }
 
 defineProps<{
@@ -23,9 +24,17 @@ const page = usePage<SharedData>();
         <SidebarMenu>
             <SidebarMenuItem v-for="item in items" :key="item.title">
                 <SidebarMenuButton as-child :is-active="item.href === page.url">
-                    <Link :href="item.href">
-                        <component :is="item.icon" />
-                        <span>{{ item.title }}</span>
+                    <Link :href="item.href" class="flex w-full items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <component :is="item.icon" />
+                            <span>{{ item.title }}</span>
+                        </span>
+                        <span
+                            v-if="item.badge && item.badge > 0"
+                            class="ml-auto rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground"
+                        >
+                            {{ item.badge }}
+                        </span>
                     </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
