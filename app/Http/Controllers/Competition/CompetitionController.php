@@ -12,6 +12,7 @@ use App\Http\Requests\Competition\PublishCompetitionRequest;
 use App\Http\Requests\Competition\StoreCompetitionRequest;
 use App\Http\Requests\Competition\UpdateCompetitionRequest;
 use App\Models\Competition;
+use App\Models\CompetitionCategory;
 use App\Models\Organization;
 use App\Services\Competition\ActivateCompetitionService;
 use App\Services\Competition\CloseCompetitionService;
@@ -60,14 +61,37 @@ class CompetitionController extends Controller
 
         $competition->load(['organization', 'categories']);
 
+        $categories = $competition->categories
+            ->sortBy('sort_order')
+            ->values()
+            ->map(fn (CompetitionCategory $category) => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'description' => $category->description,
+                'status' => $category->status->value,
+                'sort_order' => $category->sort_order,
+                'max_participants' => $category->max_participants,
+                'registration_ends_at' => $category->registration_ends_at?->toISOString(),
+                'is_default' => $category->is_default,
+                'can' => [
+                    'update' => $request->user()->can('update', $category),
+                    'delete' => $request->user()->can('delete', $category),
+                    'activate' => $request->user()->can('activate', $category),
+                    'disable' => $request->user()->can('disable', $category),
+                ],
+            ]);
+
         return Inertia::render('competition/competitions/Edit', [
             'competition' => $competition,
+            'categories' => $categories,
             'can' => [
                 'update' => $request->user()->can('update', $competition),
                 'delete' => $request->user()->can('delete', $competition),
                 'publish' => $request->user()->can('publish', $competition),
                 'activate' => $request->user()->can('activate', $competition),
                 'close' => $request->user()->can('close', $competition),
+                'createCategory' => $request->user()->can('create', [CompetitionCategory::class, $competition]),
             ],
         ]);
     }

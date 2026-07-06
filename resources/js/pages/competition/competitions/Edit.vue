@@ -17,13 +17,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { type BreadcrumbItem, type Competition, type CompetitionPermissions } from '@/types';
+import CategoryList from '@/components/Competition/CategoryList.vue';
+import { type BreadcrumbItem, type Competition, type CompetitionPermissions, type ManagedCategory } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface Props {
     competition: Competition;
+    categories: ManagedCategory[];
     can: CompetitionPermissions;
 }
 
@@ -211,18 +213,16 @@ const statusClass = (status: string): string => {
                 </CardContent>
             </Card>
 
-            <Card v-if="competition.categories?.length" class="max-w-2xl">
+            <Card class="max-w-2xl">
                 <CardHeader>
                     <CardTitle>Categories</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <ul class="space-y-2 text-sm">
-                        <li v-for="category in competition.categories" :key="category.id" class="flex items-center justify-between">
-                            <span>{{ category.name }}</span>
-                            <span class="text-muted-foreground">{{ formatStatus(category.status) }}</span>
-                        </li>
-                    </ul>
-                    <p class="mt-3 text-xs text-muted-foreground">Category management coming in a future update.</p>
+                    <CategoryList
+                        :competition-id="competition.id"
+                        :categories="categories"
+                        :can-create="can.createCategory"
+                    />
                 </CardContent>
             </Card>
 

@@ -84,9 +84,23 @@ export interface CompetitionCategory {
     id: number;
     name: string;
     slug: string;
+    description?: string | null;
     status: string;
     is_default: boolean;
     sort_order: number;
+    max_participants?: number | null;
+    registration_ends_at?: string | null;
+}
+
+export interface CategoryPermissions {
+    update: boolean;
+    delete: boolean;
+    activate: boolean;
+    disable: boolean;
+}
+
+export interface ManagedCategory extends CompetitionCategory {
+    can: CategoryPermissions;
 }
 
 export interface Competition {
@@ -113,6 +127,7 @@ export interface CompetitionPermissions {
     publish: boolean;
     activate: boolean;
     close: boolean;
+    createCategory: boolean;
 }
 
 export interface PaginatedCompetitions<T> {
