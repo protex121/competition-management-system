@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\CompetitionStatus;
+use App\Enums\RegistrationMode;
 use App\Models\Scopes\OrganizationScope;
 use Database\Factories\CompetitionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -29,12 +30,18 @@ class Competition extends Model
         'registration_starts_at',
         'registration_ends_at',
         'max_participants',
+        'registration_mode',
+        'min_team_size',
+        'max_team_size',
+        'requires_coach',
     ];
 
     protected function casts(): array
     {
         return [
             'status' => CompetitionStatus::class,
+            'registration_mode' => RegistrationMode::class,
+            'requires_coach' => 'boolean',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'registration_starts_at' => 'datetime',
@@ -55,6 +62,21 @@ class Competition extends Model
     public function categories(): HasMany
     {
         return $this->hasMany(CompetitionCategory::class)->orderBy('sort_order');
+    }
+
+    public function teams(): HasMany
+    {
+        return $this->hasMany(Team::class);
+    }
+
+    public function allowsTeams(): bool
+    {
+        return $this->registration_mode->allowsTeams();
+    }
+
+    public function allowsIndividual(): bool
+    {
+        return $this->registration_mode->allowsIndividual();
     }
 
     public function isDraft(): bool

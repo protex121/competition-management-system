@@ -137,7 +137,7 @@ Full design: [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md).
 | `is_default` | boolean | `true` for auto-created General |
 | timestamps + `deleted_at` | | Soft delete |
 
-## Tables (Sprint 3 — planned)
+## Tables (Sprint 3 — implemented)
 
 Full design: [TEAM_PARTICIPANT_DESIGN.md](TEAM_PARTICIPANT_DESIGN.md).
 
@@ -228,6 +228,11 @@ A judge's score for a submission against a criterion; a judge cannot score their
 | `2026_07_03_000002_add_identity_columns_to_users_table` | Adds tenancy/identity columns to `users` |
 | `2026_07_05_000001_create_competitions_table` | `competitions` |
 | `2026_07_05_000002_create_competition_categories_table` | `competition_categories` |
+| `2026_07_06_000001_add_team_settings_to_competitions_table` | Team settings on `competitions` |
+| `2026_07_06_000002_create_participant_profiles_table` | `participant_profiles` |
+| `2026_07_06_000003_create_teams_table` | `teams` |
+| `2026_07_06_000004_create_team_members_table` | `team_members` |
+| `2026_07_06_000005_create_team_invitations_table` | `team_invitations` |
 
 ## Seed Data
 
