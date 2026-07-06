@@ -16,4 +16,5 @@ require __DIR__.'/auth.php';
 require __DIR__.'/users.php';
 require __DIR__.'/competitions.php';
 require __DIR__.'/participant.php';
+require __DIR__.'/teams.php';
 require __DIR__.'/events.php';
