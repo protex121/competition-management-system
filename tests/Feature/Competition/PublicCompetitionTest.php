@@ -23,7 +23,7 @@ class PublicCompetitionTest extends TestCase
     public function test_guest_can_view_published_competition(): void
     {
         $organization = Organization::factory()->create(['slug' => 'acme-corp']);
-        $competition = Competition::factory()->published()->create([
+        $competition = Competition::factory()->teamMode()->published()->create([
             'organization_id' => $organization->id,
             'slug' => 'winter-hackathon',
             'name' => 'Winter Hackathon',
@@ -48,6 +48,9 @@ class PublicCompetitionTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('competition/public/Show')
                 ->where('competition.name', 'Winter Hackathon')
+                ->where('competition.registration_mode', 'team')
+                ->where('competition.min_team_size', 2)
+                ->where('competition.max_team_size', 5)
                 ->where('organization.slug', 'acme-corp')
                 ->has('categories', 1)
                 ->where('categories.0.name', 'Junior')

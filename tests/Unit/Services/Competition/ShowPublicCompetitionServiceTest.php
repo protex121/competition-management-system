@@ -37,6 +37,7 @@ class ShowPublicCompetitionServiceTest extends TestCase
         $this->assertSame('acme', $result['organization']['slug']);
         $this->assertCount(1, $result['categories']);
         $this->assertSame('Open', $result['categories'][0]['name']);
+        $this->assertSame('individual', $result['competition']['registration_mode']);
     }
 
     public function test_service_aborts_for_draft_competition(): void

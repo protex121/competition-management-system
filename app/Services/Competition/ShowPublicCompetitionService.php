@@ -79,6 +79,10 @@ class ShowPublicCompetitionService
                 'registration_starts_at' => $competition->registration_starts_at?->toISOString(),
                 'registration_ends_at' => $competition->registration_ends_at?->toISOString(),
                 'max_participants' => $competition->max_participants,
+                'registration_mode' => $competition->registration_mode->value,
+                'min_team_size' => $competition->min_team_size,
+                'max_team_size' => $competition->max_team_size,
+                'requires_coach' => $competition->requires_coach,
             ],
             'categories' => $categories,
         ];
