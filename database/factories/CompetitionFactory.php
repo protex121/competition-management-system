@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Enums\CompetitionStatus;
+use App\Enums\RegistrationMode;
 use App\Models\Competition;
 use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -32,7 +33,20 @@ class CompetitionFactory extends Factory
             'registration_starts_at' => null,
             'registration_ends_at' => null,
             'max_participants' => null,
+            'registration_mode' => RegistrationMode::Individual,
+            'min_team_size' => null,
+            'max_team_size' => null,
+            'requires_coach' => false,
         ];
+    }
+
+    public function teamMode(): static
+    {
+        return $this->state(fn (): array => [
+            'registration_mode' => RegistrationMode::Team,
+            'min_team_size' => 2,
+            'max_team_size' => 5,
+        ]);
     }
 
     public function published(): static
