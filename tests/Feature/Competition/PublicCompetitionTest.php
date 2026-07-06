@@ -1,0 +1,149 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Competition;
+
+use App\Enums\CategoryStatus;
+use App\Enums\CompetitionStatus;
+use App\Models\Competition;
+use App\Models\CompetitionCategory;
+use App\Models\Organization;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class PublicCompetitionTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_guest_can_view_published_competition(): void
+    {
+        $organization = Organization::factory()->create(['slug' => 'acme-corp']);
+        $competition = Competition::factory()->published()->create([
+            'organization_id' => $organization->id,
+            'slug' => 'winter-hackathon',
+            'name' => 'Winter Hackathon',
+            'description' => 'Annual event',
+        ]);
+        CompetitionCategory::factory()->active()->create([
+            'competition_id' => $competition->id,
+            'name' => 'Junior',
+            'slug' => 'junior',
+        ]);
+        CompetitionCategory::factory()->create([
+            'competition_id' => $competition->id,
+            'name' => 'Draft Track',
+            'status' => CategoryStatus::Draft,
+        ]);
+
+        $this->get(route('events.competitions.show', [
+            'organization' => $organization->slug,
+            'competition' => $competition->slug,
+        ]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('competition/public/Show')
+                ->where('competition.name', 'Winter Hackathon')
+                ->where('organization.slug', 'acme-corp')
+                ->has('categories', 1)
+                ->where('categories.0.name', 'Junior')
+            );
+    }
+
+    public function test_guest_can_view_active_and_closed_competitions(): void
+    {
+        $organization = Organization::factory()->create(['slug' => 'acme-corp']);
+        $active = Competition::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'slug' => 'spring-cup',
+        ]);
+        $closed = Competition::factory()->closed()->create([
+            'organization_id' => $organization->id,
+            'slug' => 'autumn-finals',
+        ]);
+
+        $this->get(route('events.competitions.show', [
+            'organization' => $organization->slug,
+            'competition' => $active->slug,
+        ]))->assertOk();
+
+        $this->get(route('events.competitions.show', [
+            'organization' => $organization->slug,
+            'competition' => $closed->slug,
+        ]))->assertOk();
+    }
+
+    public function test_draft_competition_is_not_publicly_accessible(): void
+    {
+        $organization = Organization::factory()->create(['slug' => 'acme-corp']);
+        $competition = Competition::factory()->create([
+            'organization_id' => $organization->id,
+            'slug' => 'secret-event',
+            'status' => CompetitionStatus::Draft,
+        ]);
+
+        $this->get(route('events.competitions.show', [
+            'organization' => $organization->slug,
+            'competition' => $competition->slug,
+        ]))->assertNotFound();
+    }
+
+    public function test_unknown_organization_or_competition_returns_not_found(): void
+    {
+        $organization = Organization::factory()->create(['slug' => 'acme-corp']);
+        Competition::factory()->published()->create([
+            'organization_id' => $organization->id,
+            'slug' => 'winter-hackathon',
+        ]);
+
+        $this->get(route('events.competitions.show', [
+            'organization' => 'missing-org',
+            'competition' => 'winter-hackathon',
+        ]))->assertNotFound();
+
+        $this->get(route('events.competitions.show', [
+            'organization' => $organization->slug,
+            'competition' => 'missing-event',
+        ]))->assertNotFound();
+    }
+
+    public function test_closed_competition_shows_archived_categories(): void
+    {
+        $organization = Organization::factory()->create(['slug' => 'acme-corp']);
+        $competition = Competition::factory()->closed()->create([
+            'organization_id' => $organization->id,
+            'slug' => 'past-event',
+        ]);
+        CompetitionCategory::factory()->create([
+            'competition_id' => $competition->id,
+            'name' => 'General',
+            'slug' => 'general',
+            'status' => CategoryStatus::Archived,
+        ]);
+
+        $this->get(route('events.competitions.show', [
+            'organization' => $organization->slug,
+            'competition' => $competition->slug,
+        ]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('categories', 1)
+                ->where('categories.0.name', 'General')
+            );
+    }
+
+    public function test_competition_slug_is_scoped_to_organization(): void
+    {
+        $orgA = Organization::factory()->create(['slug' => 'org-a']);
+        $orgB = Organization::factory()->create(['slug' => 'org-b']);
+        Competition::factory()->published()->create([
+            'organization_id' => $orgA->id,
+            'slug' => 'shared-slug',
+        ]);
+
+        $this->get(route('events.competitions.show', [
+            'organization' => $orgB->slug,
+            'competition' => 'shared-slug',
+        ]))->assertNotFound();
+    }
+}
