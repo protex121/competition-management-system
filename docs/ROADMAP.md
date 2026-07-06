@@ -122,7 +122,7 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 
 ### Approval
 
-- [ ] Team approval workflow ([#35](https://github.com/protex121/competition-management-system/issues/35))
+- [x] Team approval workflow ([#35](https://github.com/protex121/competition-management-system/issues/35))
 - [ ] Organizer review UI ([#36](https://github.com/protex121/competition-management-system/issues/36))
 
 ### Coach (P2)
