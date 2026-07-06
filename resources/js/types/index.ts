@@ -134,6 +134,7 @@ export interface CompetitionPermissions {
     activate: boolean;
     close: boolean;
     createCategory: boolean;
+    reviewTeams: boolean;
 }
 
 export interface PaginatedCompetitions<T> {

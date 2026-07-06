@@ -18,7 +18,7 @@ Closes the gap between implemented backend services/routes and discoverable UI f
 
 1. **#62** ✅ — Participant competition browse + navigation — merged PR #67
 2. **#63** ✅ — Team membership UI — merged PR #68
-3. **#64** — Coach assignment UI on team show
+3. **#64** ✅ — Coach assignment UI — merged PR #69
 4. **#65** — Organizer review link on competition edit
 5. **#66** — Public page participation CTA
 
