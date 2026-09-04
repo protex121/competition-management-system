@@ -7,12 +7,14 @@ namespace App\Providers;
 use App\Models\Competition;
 use App\Models\CompetitionCategory;
 use App\Models\ParticipantProfile;
+use App\Models\Registration;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
 use App\Policies\Competition\CompetitionCategoryPolicy;
 use App\Policies\Competition\CompetitionPolicy;
 use App\Policies\Identity\UserPolicy;
+use App\Policies\Registration\RegistrationPolicy;
 use App\Policies\Team\ParticipantProfilePolicy;
 use App\Policies\Team\TeamInvitationPolicy;
 use App\Policies\Team\TeamPolicy;
@@ -34,5 +36,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ParticipantProfile::class, ParticipantProfilePolicy::class);
         Gate::policy(Team::class, TeamPolicy::class);
         Gate::policy(TeamInvitation::class, TeamInvitationPolicy::class);
+        Gate::policy(Registration::class, RegistrationPolicy::class);
     }
 }
