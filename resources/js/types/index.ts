@@ -99,6 +99,7 @@ export interface CategoryPermissions {
     delete: boolean;
     activate: boolean;
     disable: boolean;
+    viewRegistrations: boolean;
 }
 
 export interface ManagedCategory extends CompetitionCategory {
@@ -207,9 +208,15 @@ export interface TeamDetail extends TeamSummary {
     competition: {
         id: number;
         name: string;
+        categories: { id: number; name: string }[];
     };
     members: TeamMemberSummary[];
     pending_invitations: TeamInvitationSummary[];
+    registration: {
+        id: number;
+        status: string;
+        can: { withdraw: boolean };
+    } | null;
 }
 
 export interface TeamPermissions {
@@ -220,6 +227,7 @@ export interface TeamPermissions {
     submit: boolean;
     leave: boolean;
     assignCoach: boolean;
+    register: boolean;
 }
 
 export interface PaginatedTeams<T> {

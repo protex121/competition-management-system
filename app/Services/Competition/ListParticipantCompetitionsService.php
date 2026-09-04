@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services\Competition;
 
+use App\Enums\CategoryStatus;
 use App\Enums\CompetitionStatus;
+use App\Enums\RegistrationStatus;
 use App\Enums\TeamMemberStatus;
 use App\Enums\UserRole;
 use App\Models\Competition;
+use App\Models\CompetitionCategory;
+use App\Models\Registration;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -34,6 +38,39 @@ class ListParticipantCompetitionsService
 
         $paginator->getCollection()->transform(function (Competition $competition) use ($actor): array {
             $myTeam = null;
+            $categories = [];
+            $myRegistration = null;
+
+            if ($competition->allowsIndividual()) {
+                $categories = CompetitionCategory::query()
+                    ->where('competition_id', $competition->id)
+                    ->where('status', CategoryStatus::Active)
+                    ->orderBy('sort_order')
+                    ->get(['id', 'name'])
+                    ->map(fn (CompetitionCategory $category) => [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                    ])
+                    ->values()
+                    ->all();
+
+                $registration = Registration::withoutGlobalScopes()
+                    ->where('user_id', $actor->id)
+                    ->where('status', RegistrationStatus::Confirmed)
+                    ->whereIn('competition_category_id', CompetitionCategory::query()
+                        ->where('competition_id', $competition->id)
+                        ->pluck('id'))
+                    ->with('category')
+                    ->first();
+
+                if ($registration !== null) {
+                    $myRegistration = [
+                        'id' => $registration->id,
+                        'status' => $registration->status->value,
+                        'category_name' => $registration->category->name,
+                    ];
+                }
+            }
 
             if ($competition->allowsTeams()) {
                 $team = Team::withoutGlobalScopes()
@@ -64,6 +101,8 @@ class ListParticipantCompetitionsService
                 'starts_at' => $competition->starts_at?->toISOString(),
                 'registration_ends_at' => $competition->registration_ends_at?->toISOString(),
                 'my_team' => $myTeam,
+                'categories' => $categories,
+                'my_registration' => $myRegistration,
             ];
         });
 

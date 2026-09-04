@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Team;
 
+use App\Enums\CategoryStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Team\StoreTeamRequest;
 use App\Http\Requests\Team\UpdateTeamRequest;
 use App\Models\Competition;
+use App\Models\CompetitionCategory;
+use App\Models\Registration;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\TeamMember;
@@ -86,6 +89,17 @@ class TeamController extends Controller
             ? $coachesService->execute($team->competition)->values()->all()
             : [];
 
+        $availableCategories = CompetitionCategory::query()
+            ->where('competition_id', $team->competition_id)
+            ->where('status', CategoryStatus::Active)
+            ->orderBy('sort_order')
+            ->get();
+
+        $registration = Registration::withoutGlobalScopes()
+            ->where('team_id', $team->id)
+            ->latest()
+            ->first();
+
         return Inertia::render('team/teams/Show', [
             'team' => [
                 'id' => $team->id,
@@ -106,7 +120,18 @@ class TeamController extends Controller
                 'competition' => [
                     'id' => $team->competition->id,
                     'name' => $team->competition->name,
+                    'categories' => $availableCategories->map(fn (CompetitionCategory $category) => [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                    ]),
                 ],
+                'registration' => $registration ? [
+                    'id' => $registration->id,
+                    'status' => $registration->status->value,
+                    'can' => [
+                        'withdraw' => $user->can('withdraw', $registration),
+                    ],
+                ] : null,
                 'members' => $team->members->map(fn (TeamMember $member) => [
                     'id' => $member->id,
                     'role' => $member->role->value,
@@ -140,6 +165,9 @@ class TeamController extends Controller
                 'submit' => $user->can('submit', $team),
                 'leave' => $canLeave,
                 'assignCoach' => $user->can('assignCoach', $team),
+                'register' => ($registration === null || $registration->isWithdrawn())
+                    && $availableCategories->isNotEmpty()
+                    && $user->can('createForTeam', [Registration::class, $team, $availableCategories->first()]),
             ],
         ]);
     }

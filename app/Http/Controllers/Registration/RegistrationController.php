@@ -11,6 +11,7 @@ use App\Models\Competition;
 use App\Models\CompetitionCategory;
 use App\Models\Registration;
 use App\Models\Team;
+use App\Models\User;
 use App\Services\Registration\ListParticipantRegistrationsService;
 use App\Services\Registration\ListRegistrationsService;
 use App\Services\Registration\RegisterParticipantService;
@@ -25,10 +26,13 @@ class RegistrationController extends Controller
 {
     public function index(Request $request, ListParticipantRegistrationsService $service): Response
     {
-        $registrations = $service->execute($request->user());
+        $user = $request->user();
+        $registrations = $service->execute($user);
 
         return Inertia::render('registration/registrations/Index', [
-            'registrations' => $registrations->map(fn (Registration $registration) => $this->present($registration))->values(),
+            'registrations' => $registrations
+                ->map(fn (Registration $registration) => $this->present($registration, $user))
+                ->values(),
         ]);
     }
 
@@ -85,14 +89,16 @@ class RegistrationController extends Controller
                 'id' => $category->id,
                 'name' => $category->name,
             ],
-            'registrations' => $registrations->map(fn (Registration $registration) => $this->present($registration))->values(),
+            'registrations' => $registrations
+                ->map(fn (Registration $registration) => $this->present($registration, $request->user()))
+                ->values(),
         ]);
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function present(Registration $registration): array
+    private function present(Registration $registration, User $viewer): array
     {
         return [
             'id' => $registration->id,
@@ -115,6 +121,9 @@ class RegistrationController extends Controller
                 'id' => $registration->team->id,
                 'name' => $registration->team->name,
             ] : null,
+            'can' => [
+                'withdraw' => $viewer->can('withdraw', $registration),
+            ],
         ];
     }
 }

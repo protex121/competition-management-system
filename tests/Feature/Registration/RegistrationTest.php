@@ -259,4 +259,20 @@ class RegistrationTest extends TestCase
                 ->component('registration/registrations/Review', shouldExist: false)
                 ->has('registrations', 1));
     }
+
+    public function test_team_show_page_exposes_available_categories_and_register_flag(): void
+    {
+        $competition = Competition::factory()->teamMode()->published()->create(['min_team_size' => 1]);
+        $category = $this->createActiveCategoryFor($competition);
+        $team = Team::factory()->approved()->create(['competition_id' => $competition->id]);
+        $captain = User::query()->findOrFail($team->captain_user_id);
+
+        $this->actingAs($captain)
+            ->get(route('teams.show', $team))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('team.competition.categories.0.id', $category->id)
+                ->where('team.registration', null)
+                ->where('can.register', true));
+    }
 }
