@@ -1,8 +1,8 @@
 # Development Handoff
 
-**Last updated:** 2026-07-06  
-**Scope:** Sprint 0 through Sprint 3 (including UX closure #62–#66).  
-**Does not cover:** Sprint 4 and beyond — not started.
+**Last updated:** 2026-09-05  
+**Scope:** Sprint 0 through Sprint 4.  
+**Does not cover:** Sprint 5 and beyond — not started.
 
 Use this document when switching AI assistants (Claude, Cursor, etc.) or onboarding a new developer. The repository and `docs/` folder are the source of truth; this file summarizes **current state** and **how we work**.
 
@@ -16,8 +16,8 @@ Use this document when switching AI assistants (Claude, Cursor, etc.) or onboard
 | GitHub | [protex121/competition-management-system](https://github.com/protex121/competition-management-system) |
 | Integration branch | `develop` |
 | Production branch | `main` |
-| Latest milestone | Sprint 3 + UX closure merged to `develop` |
-| Tests | **256 passing** (`php artisan test`) |
+| Latest milestone | Sprint 4 (Registration Management) merged to `develop` |
+| Tests | **287 passing** (`php artisan test`) |
 
 ---
 
@@ -106,6 +106,7 @@ Seed super admin: `php artisan db:seed --class=SuperAdminSeeder`
 | Sprint 3 | `docs/TEAM_PARTICIPANT_DESIGN.md` | Teams, invitations, approval |
 | Sprint 3 | `docs/TEAM_PARTICIPANT_RESEARCH.md` | Domain research |
 | UX closure | `docs/SPRINT3_UX_CLOSURE.md` | Post-Sprint 3 UI gaps closed (#62–#66) |
+| Sprint 4 | `docs/REGISTRATION_DESIGN.md` | Registration module design (ADR-0023/0024) |
 
 ---
 
@@ -173,6 +174,22 @@ Closed discoverability gaps between backend and UI:
 
 Details: `docs/SPRINT3_UX_CLOSURE.md`.
 
+### Sprint 4 — Registration management ✅
+
+**Boundary:** Registration links a `user_id` (individual) **or** an approved `team_id` (never both) to a `competition_category_id`. No approval step — registration is instant (`confirmed`/`withdrawn`). Capacity is slot-based: one confirmed registration = one slot, regardless of team size.
+
+Delivered:
+
+| Area | Highlights |
+|------|------------|
+| Foundation | `registrations` table, `RegistrationStatus` enum, `RegistrationOrganizationScope` (two-hop tenant scope), `EffectiveCategoryConfig` (the ADR-0012 inherit-with-override resolver, finally implemented) |
+| Flow | `RegisterParticipantService`, `RegisterTeamService` (reuse Sprint 3's `CheckParticipantEligibilityService`/`CheckTeamEligibilityService`), `WithdrawRegistrationService`; deadline + row-locked capacity check under transaction |
+| Notification | `RegistrationConfirmed` — project's first Notification class, `database` channel only (no mail infra yet) |
+| Policies | `RegistrationPolicy` (createIndividual, createForTeam, view, viewAny, withdraw) |
+| UI | Participant "My Registrations", organizer per-category read-only "Registrations" review, Register CTA on participant competition browse + team show |
+
+**Issues:** #72, #74, #76, #78 (see `docs/ROADMAP.md` Sprint 4 checklist).
+
 ---
 
 ## Route map (current)
@@ -185,6 +202,7 @@ routes/users.php        → organizer user management
 routes/competitions.php → organizer competition + category CRUD, lifecycle
 routes/participant.php  → participant profile, competition browse
 routes/teams.php        → teams, invitations, approval, membership, coach
+routes/registrations.php → registration store (individual/team), withdraw, organizer review
 routes/events.php       → public competition page (guest + auth)
 ```
 
@@ -200,6 +218,11 @@ routes/events.php       → public competition page (guest + auth)
 | `competitions.teams.review` | `/competitions/{id}/teams/review` | Organizer |
 | `competitions.edit` | `/competitions/{id}/edit` | Organizer |
 | `events.competitions.show` | `/events/{org}/{competition}` | Public |
+| `registrations.index` | `/registrations` | Participant ("My Registrations") |
+| `registrations.withdraw` | `/registrations/{registration}/withdraw` (PATCH) | Registrant / captain |
+| `competitions.registrations.store` | `/competitions/{competition}/registrations` (POST) | Participant (individual) |
+| `teams.registrations.store` | `/teams/{team}/registrations` (POST) | Captain |
+| `competitions.categories.registrations.index` | `/competitions/{id}/categories/{category}/registrations` | Organizer |
 
 ---
 
@@ -210,24 +233,31 @@ app/Http/Controllers/
 ├── Identity/          → UserController
 ├── Settings/          → Profile, Password (starter kit)
 ├── Competition/       → Competition, Category, Public, ParticipantCompetition
-└── Team/              → Team, TeamMember, TeamCoach, TeamInvitation, TeamApproval, ParticipantProfile
+├── Team/              → Team, TeamMember, TeamCoach, TeamInvitation, TeamApproval, ParticipantProfile
+└── Registration/      → RegistrationController
 
 app/Services/
 ├── Identity/
 ├── Competition/
-└── Team/
+├── Team/
+└── Registration/      → EffectiveCategoryConfig, Register*Service, ListRegistrationsService, ...
 
 app/Policies/
 ├── Identity/
 ├── Competition/
-└── Team/
+├── Team/
+└── Registration/      → RegistrationPolicy
+
+app/Notifications/
+└── Registration/      → RegistrationConfirmed (database channel; project's first Notification)
 
 resources/js/pages/
 ├── identity/users/
 ├── competition/competitions/   → organizer
 ├── competition/public/         → public show
 ├── participant/                → browse, profile
-└── team/                       → teams, invitations
+├── team/                       → teams, invitations
+└── registration/registrations/ → My Registrations, organizer Review
 ```
 
 ---
@@ -251,7 +281,7 @@ resources/js/pages/
 | Status field | `PVTSSF_lAHOAlhBfs4BcglOzhXI1Ts` |
 | Done option ID | `98236657` |
 
-Issues #62–#66 are closed and marked **Done** on the board.
+Issues #62–#66 and #72–#78 are closed and marked **Done** on the board. Sprint 4 issues/PRs are attached to milestone **`Sprint 4 - Registration Management`** — going forward, attach new issues/PRs to their sprint milestone (prior sprints did not do this consistently).
 
 ---
 
@@ -269,6 +299,12 @@ Issues #62–#66 are closed and marked **Done** on the board.
 1. Login → Sidebar **Competitions** → join or create team
 2. Team show → invite, assign coach, transfer captain, submit for approval
 3. Sidebar **Invitations** (badge when pending)
+4. Competitions browse → **Register** (individual, picks a category) or, on an approved team's show page, **Register team**
+5. Sidebar **My Registrations** → withdraw
+
+### Organizer (registrations)
+
+1. Competition Edit → category row → **Registrations** (read-only list for that category)
 
 ### Public
 
@@ -281,10 +317,11 @@ Issues #62–#66 are closed and marked **Done** on the board.
 
 These were deferred by design — **do not implement without a new sprint/issue**:
 
-- `registrations` table and category registration flow (Sprint 4)
-- Email notifications for invitations
-- Individual registration UI (only team flows are complete)
+- Email notifications (registration confirmation and team invitations are in-app/`database`-channel only — no mail infra yet)
+- Organizer-initiated registration cancellation (Sprint 4 organizer access is read-only oversight)
+- Waitlisting once a category is at capacity (registration is simply rejected, not queued)
 - Committee / judge roles (enum exists, features not built)
+- Submissions, judging, payments (Sprint 5+)
 - JSON API (Inertia only for now; see `docs/API_GUIDELINES.md`)
 
 ---
@@ -299,8 +336,8 @@ Read first:
 2. PROJECT_RULES.md
 3. docs/ROADMAP.md
 
-Current state: Sprint 0–3 complete including UX closure (#62–#66).
-256 tests passing. Do NOT start Sprint 4 unless I explicitly ask.
+Current state: Sprint 0–4 complete (through Registration Management, #72–#78).
+287 tests passing. Do NOT start Sprint 5 unless I explicitly ask.
 
 Workflow: one GitHub issue at a time, PR per issue, run tests before merge.
 
@@ -310,7 +347,16 @@ My task for this session:
 
 ---
 
-## Recent merge history (UX closure)
+## Recent merge history (Sprint 4 — Registration Management)
+
+```
+PR #73  feat(registration): foundation - model, migration, policy, EffectiveCategoryConfig (#72)
+PR #75  feat(registration): solo & team registration flow, deadline/capacity enforcement (#74)
+PR #77  feat(registration): confirmation notification, database channel (#76)
+PR #79  feat(registration): UI - My Registrations, organizer review, Register CTA (#78)
+```
+
+### Sprint 3 UX closure
 
 ```
 PR #67  feat(ux): participant competition browse (#62)
@@ -326,4 +372,4 @@ For full history: `git log develop --oneline` or GitHub PR list.
 
 ## What comes next (not started — do not implement from this doc)
 
-Sprint 4 — **Registration Management** is planned in `docs/ROADMAP.md` but **not implemented**. Start only when the owner prompts with explicit Sprint 4 requirements and issues.
+Sprint 5 — **Submissions** is planned in `docs/ROADMAP.md` but **not implemented**. Start only when the owner prompts with explicit Sprint 5 requirements and issues.

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { TransitionRoot } from '@headlessui/vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -8,8 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem, type CoachOption, type TeamDetail, type TeamPermissions } from '@/types';
+import { TransitionRoot } from '@headlessui/vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { LoaderCircle, Trash2 } from 'lucide-vue-next';
+import { ref } from 'vue';
 
 interface Props {
     team: TeamDetail;
@@ -18,6 +19,8 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const selectedCategoryId = ref<number | ''>(props.team.competition.categories[0]?.id ?? '');
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: props.team.competition.name, href: route('competitions.teams.index', props.team.competition.id) },
@@ -106,6 +109,26 @@ const removeCoach = () => {
     router.delete(route('teams.coach.destroy', props.team.id), { preserveScroll: true });
 };
 
+const registerTeam = () => {
+    if (!selectedCategoryId.value) {
+        return;
+    }
+
+    router.post(route('teams.registrations.store', props.team.id), { competition_category_id: selectedCategoryId.value }, { preserveScroll: true });
+};
+
+const withdrawRegistration = () => {
+    if (!props.team.registration) {
+        return;
+    }
+
+    if (!confirm('Withdraw this registration? This frees your slot for someone else.')) {
+        return;
+    }
+
+    router.patch(route('registrations.withdraw', props.team.registration.id), {}, { preserveScroll: true });
+};
+
 const formatStatus = (status: string): string =>
     status
         .split('_')
@@ -140,7 +163,10 @@ const formatRole = (role: string): string => (role === 'captain' ? 'Captain' : '
                 </span>
             </div>
 
-            <div v-if="team.status === 'rejected' && team.rejection_reason" class="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+            <div
+                v-if="team.status === 'rejected' && team.rejection_reason"
+                class="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+            >
                 <p class="font-medium">Rejection reason</p>
                 <p class="mt-1">{{ team.rejection_reason }}</p>
             </div>
@@ -189,22 +215,10 @@ const formatRole = (role: string): string => (role === 'captain' ? 'Captain' : '
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <span class="text-xs text-muted-foreground">{{ formatRole(member.role) }}</span>
-                                    <Button
-                                        v-if="member.can?.transferCaptain"
-                                        variant="outline"
-                                        size="sm"
-                                        @click="transferCaptain(member.id)"
-                                    >
+                                    <Button v-if="member.can?.transferCaptain" variant="outline" size="sm" @click="transferCaptain(member.id)">
                                         Make captain
                                     </Button>
-                                    <Button
-                                        v-if="member.can?.remove"
-                                        variant="ghost"
-                                        size="sm"
-                                        @click="removeMember(member.id)"
-                                    >
-                                        Remove
-                                    </Button>
+                                    <Button v-if="member.can?.remove" variant="ghost" size="sm" @click="removeMember(member.id)"> Remove </Button>
                                 </div>
                             </li>
                             <li v-if="team.members.length === 0" class="px-6 py-4 text-sm text-muted-foreground">No members yet.</li>
@@ -235,14 +249,7 @@ const formatRole = (role: string): string => (role === 'captain' ? 'Captain' : '
                                 class="flex items-center justify-between px-4 py-2 text-sm"
                             >
                                 <span>{{ invitation.email }}</span>
-                                <Button
-                                    v-if="invitation.can?.revoke"
-                                    variant="ghost"
-                                    size="sm"
-                                    @click="revokeInvite(invitation.id)"
-                                >
-                                    Revoke
-                                </Button>
+                                <Button v-if="invitation.can?.revoke" variant="ghost" size="sm" @click="revokeInvite(invitation.id)"> Revoke </Button>
                             </li>
                         </ul>
                     </CardContent>
@@ -282,9 +289,45 @@ const formatRole = (role: string): string => (role === 'captain' ? 'Captain' : '
                             No coaches available in your organization.
                         </p>
 
-                        <Button v-if="can.assignCoach && team.coach" variant="outline" size="sm" @click="removeCoach">
-                            Remove coach
-                        </Button>
+                        <Button v-if="can.assignCoach && team.coach" variant="outline" size="sm" @click="removeCoach"> Remove coach </Button>
+                    </CardContent>
+                </Card>
+
+                <Card v-if="team.registration || can.register">
+                    <CardHeader>
+                        <CardTitle>Registration</CardTitle>
+                    </CardHeader>
+                    <CardContent class="space-y-4">
+                        <div v-if="team.registration" class="flex items-center justify-between text-sm">
+                            <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(team.registration.status)">
+                                {{ formatStatus(team.registration.status) }}
+                            </span>
+                            <Button v-if="team.registration.can.withdraw" variant="outline" size="sm" @click="withdrawRegistration">
+                                Withdraw
+                            </Button>
+                        </div>
+
+                        <form v-if="can.register" class="flex gap-2" @submit.prevent="registerTeam">
+                            <div class="grid flex-1 gap-2">
+                                <Label for="category" class="sr-only">Category</Label>
+                                <select
+                                    id="category"
+                                    v-model="selectedCategoryId"
+                                    required
+                                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                >
+                                    <option value="" disabled>Select a category</option>
+                                    <option v-for="category in team.competition.categories" :key="category.id" :value="category.id">
+                                        {{ category.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <Button type="submit" :disabled="team.competition.categories.length === 0">Register team</Button>
+                        </form>
+
+                        <p v-if="can.register && team.competition.categories.length === 0" class="text-sm text-muted-foreground">
+                            No categories are open for registration yet.
+                        </p>
                     </CardContent>
                 </Card>
             </div>

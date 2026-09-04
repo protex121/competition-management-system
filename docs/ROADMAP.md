@@ -6,7 +6,7 @@ A multi-tenant SaaS platform where organizations run hackathon-style competition
 
 Designed as a portfolio project demonstrating real-world Laravel engineering — not just CRUD.
 
-> **Handoff / current state:** [HANDOFF.md](HANDOFF.md) (through Sprint 3 — does not cover Sprint 4+).
+> **Handoff / current state:** [HANDOFF.md](HANDOFF.md) (through Sprint 4).
 
 ## Domain
 
@@ -152,18 +152,21 @@ See [SPRINT3_UX_CLOSURE.md](SPRINT3_UX_CLOSURE.md).
 
 ---
 
-## Sprint 4 — Registration Management
+## Sprint 4 — Registration Management ✅
 
 **Goal:** Participants register (solo or as approved team) to a **category**, subject to deadlines and capacity.
 
+**Design doc:** ✅ [REGISTRATION_DESIGN.md](REGISTRATION_DESIGN.md) — ADR-0023/0024 in [DECISIONS.md](DECISIONS.md)
+
 ### Features
 
-- [ ] `Registration` model (user or team + category + status)
-- [ ] Registration flow (solo and team)
-- [ ] Registration deadline enforcement (with `EffectiveCategoryConfig`)
-- [ ] Capacity limits per category
-- [ ] Registration confirmation notification
-- [ ] Feature tests
+- [x] `Registration` model (user or team + category + status) ([#72](https://github.com/protex121/competition-management-system/issues/72))
+- [x] Registration flow (solo and team) ([#74](https://github.com/protex121/competition-management-system/issues/74))
+- [x] Registration deadline enforcement (with `EffectiveCategoryConfig`) ([#72](https://github.com/protex121/competition-management-system/issues/72))
+- [x] Capacity limits per category — slot-based (ADR-0023) ([#74](https://github.com/protex121/competition-management-system/issues/74))
+- [x] Registration confirmation notification — database channel (ADR-0024) ([#76](https://github.com/protex121/competition-management-system/issues/76))
+- [x] Feature tests ([#74](https://github.com/protex121/competition-management-system/issues/74), [#76](https://github.com/protex121/competition-management-system/issues/76))
+- [x] UI: My Registrations, organizer review, Register CTAs ([#78](https://github.com/protex121/competition-management-system/issues/78))
 
 ---
 
@@ -241,7 +244,7 @@ Cross-cutting concerns tracked across sprints:
 | Competition domain researched & documented | Sprint 2 | ✅ |
 | First Event + Job pipeline | Sprint 2 | ✅ |
 | Team & participant domain researched | Sprint 3 | ✅ |
-| First Notification | Sprint 4 | ⏳ |
+| First Notification | Sprint 4 | ✅ |
 | Queue worker processing real jobs | Sprint 7 | ⏳ |
 | Docker production deployment tested | Sprint 7 | ⏳ |
 | Git workflow + CI on GitHub | When ready | ⏳ |

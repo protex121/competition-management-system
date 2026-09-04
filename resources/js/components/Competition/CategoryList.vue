@@ -15,8 +15,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type ManagedCategory } from '@/types';
-import { router, useForm } from '@inertiajs/vue3';
-import { LoaderCircle, Pencil, Plus, Trash2 } from 'lucide-vue-next';
+import { Link, router, useForm } from '@inertiajs/vue3';
+import { ListChecks, LoaderCircle, Pencil, Plus, Trash2 } from 'lucide-vue-next';
 import { ref } from 'vue';
 
 interface Props {
@@ -210,7 +210,11 @@ const statusClass = (status: string): string => {
                     <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(category.status)">
                         {{ formatStatus(category.status) }}
                     </span>
-                    <Dialog v-if="category.can.update" :open="editingCategory?.id === category.id" @update:open="(open) => !open && (editingCategory = null)">
+                    <Dialog
+                        v-if="category.can.update"
+                        :open="editingCategory?.id === category.id"
+                        @update:open="(open) => !open && (editingCategory = null)"
+                    >
                         <DialogTrigger as-child>
                             <Button type="button" variant="outline" size="sm" @click="openEdit(category)">
                                 <Pencil class="h-4 w-4" />
@@ -265,6 +269,12 @@ const statusClass = (status: string): string => {
                             </form>
                         </DialogContent>
                     </Dialog>
+                    <Button v-if="category.can.viewRegistrations" as-child type="button" variant="outline" size="sm">
+                        <Link :href="route('competitions.categories.registrations.index', { competition: competitionId, category: category.id })">
+                            <ListChecks class="mr-2 h-4 w-4" />
+                            Registrations
+                        </Link>
+                    </Button>
                     <Button v-if="category.can.activate" type="button" variant="outline" size="sm" @click="activateCategory(category)">
                         Activate
                     </Button>
