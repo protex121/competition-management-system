@@ -6,6 +6,8 @@ A multi-tenant SaaS platform where organizations run hackathon-style competition
 
 Designed as a portfolio project demonstrating real-world Laravel engineering — not just CRUD.
 
+> **Handoff / current state:** [HANDOFF.md](HANDOFF.md) (through Sprint 3 — does not cover Sprint 4+).
+
 ## Domain
 
 - **Type:** Hackathon / event-style competitions
@@ -85,12 +87,12 @@ Designed as a portfolio project demonstrating real-world Laravel engineering —
 
 ---
 
-## Sprint 3 — Team & Participant Management 🔄
+## Sprint 3 — Team & Participant Management ✅
 
 **Goal:** Participants build profiles and teams; organizers approve teams. Prepares Sprint 4 registration — **no `registrations` table in this sprint**.
 
 **Domain research:** ✅ [#22](https://github.com/protex121/competition-management-system/issues/22) — [TEAM_PARTICIPANT_RESEARCH.md](TEAM_PARTICIPANT_RESEARCH.md)  
-**Design doc:** 🔄 [#23](https://github.com/protex121/competition-management-system/issues/23) — [TEAM_PARTICIPANT_DESIGN.md](TEAM_PARTICIPANT_DESIGN.md)
+**Design doc:** ✅ [#23](https://github.com/protex121/competition-management-system/issues/23) — [TEAM_PARTICIPANT_DESIGN.md](TEAM_PARTICIPANT_DESIGN.md)
 
 ### Research & Design
 
@@ -238,7 +240,7 @@ Cross-cutting concerns tracked across sprints:
 | First Service + Form Request + Policy pattern | Sprint 1 | ✅ |
 | Competition domain researched & documented | Sprint 2 | ✅ |
 | First Event + Job pipeline | Sprint 2 | ✅ |
-| Team & participant domain researched | Sprint 3 | 🔄 |
+| Team & participant domain researched | Sprint 3 | ✅ |
 | First Notification | Sprint 4 | ⏳ |
 | Queue worker processing real jobs | Sprint 7 | ⏳ |
 | Docker production deployment tested | Sprint 7 | ⏳ |

@@ -152,29 +152,19 @@ resources/js/
 | [docs/DATABASE.md](docs/DATABASE.md) | Schema (migrations are source of truth) |
 | [docs/COMPETITION_DESIGN.md](docs/COMPETITION_DESIGN.md) | Sprint 2 competition module design |
 | [docs/API_GUIDELINES.md](docs/API_GUIDELINES.md) | Inertia conventions now; JSON API plan for later |
-| [docs/DECISIONS.md](docs/DECISIONS.md) | Architectural decisions and trade-offs |
+| [docs/HANDOFF.md](docs/HANDOFF.md) | **AI/developer handoff** — current state through Sprint 3 |
 
 ## Current Status
 
-**Sprint 0 — Complete**
+**Through Sprint 3 + UX closure — complete on `develop`**
 
-- Laravel 12 + Vue starter kit installed
-- Authentication (login, register, password reset, email verification, profile)
-- MySQL + Redis configured
-- Docker prepared for deployment
+- Sprint 0: foundation ✅
+- Sprint 1: identity & multi-tenancy ✅
+- Sprint 2: competition & category management ✅
+- Sprint 3: team & participant management ✅
+- Sprint 3 UX closure (#62–#66) ✅
+- **256 tests passing**
 
-**Sprint 1 — Complete: Identity & Multi-Tenancy**
+For full handoff context (routes, workflow, dev login, prompt template): **[docs/HANDOFF.md](docs/HANDOFF.md)**
 
-- Organizations + row-level multi-tenancy (`organization_id`)
-- Workspace-slug-scoped login; super admin via `platform` slug
-- Role-based access control (`UserRole` enum + policies)
-- User CRUD, deactivate/reactivate, soft delete
-- Profile, avatar upload, password update
-- 70 tests passing
-
-**Sprint 2 — In progress: Competition & Category Management**
-
-- Domain research complete (Competition vs Category, statuses, inherit-with-override)
-- Design doc: `docs/COMPETITION_DESIGN.md`
-- ADRs ADR-0011–0016 in `docs/DECISIONS.md`
-- Implementation: foundation shipped (migrations, models, enums, factories — Issue #4)
+Sprint 4 (registration) is planned in [docs/ROADMAP.md](docs/ROADMAP.md) but **not started**.
