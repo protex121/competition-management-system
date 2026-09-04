@@ -10,6 +10,7 @@ use App\Models\CompetitionCategory;
 use App\Models\Registration;
 use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
+use App\Notifications\Registration\RegistrationConfirmed;
 use App\Services\Team\CheckParticipantEligibilityService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -69,7 +70,11 @@ class RegisterParticipantService
                 'status' => RegistrationStatus::Confirmed,
             ]);
 
-            return $registration->load(['category.competition', 'user']);
+            $registration->load(['category.competition', 'user']);
+
+            $actor->notify(new RegistrationConfirmed($registration));
+
+            return $registration;
         });
     }
 
