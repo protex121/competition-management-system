@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Services\Registration;
 
 use App\Enums\RegistrationStatus;
+use App\Enums\TeamMemberStatus;
 use App\Models\Competition;
 use App\Models\CompetitionCategory;
 use App\Models\Registration;
 use App\Models\Scopes\OrganizationScope;
 use App\Models\Team;
+use App\Models\TeamMember;
 use App\Models\User;
+use App\Notifications\Registration\RegistrationConfirmed;
 use App\Services\Team\CheckTeamEligibilityService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -70,7 +73,11 @@ class RegisterTeamService
                 'status' => RegistrationStatus::Confirmed,
             ]);
 
-            return $registration->load(['category.competition', 'team']);
+            $registration->load(['category.competition', 'team']);
+
+            $this->notifyActiveMembers($team, $registration);
+
+            return $registration;
         });
     }
 
@@ -80,5 +87,14 @@ class RegisterTeamService
             ->where('team_id', $team->id)
             ->where('status', RegistrationStatus::Confirmed)
             ->exists();
+    }
+
+    private function notifyActiveMembers(Team $team, Registration $registration): void
+    {
+        $team->members()
+            ->where('status', TeamMemberStatus::Active)
+            ->with('user')
+            ->get()
+            ->each(fn (TeamMember $member) => $member->user?->notify(new RegistrationConfirmed($registration)));
     }
 }
