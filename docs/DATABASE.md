@@ -24,9 +24,9 @@ erDiagram
     TEAMS ||--o{ TEAM_MEMBERS : "has many"
     TEAMS ||--o{ TEAM_INVITATIONS : "has many"
     USERS ||--o{ TEAM_INVITATIONS : "invited"
-    COMPETITION_CATEGORIES ||--o{ REGISTRATIONS : "Sprint 4"
-    USERS ||--o{ REGISTRATIONS : "Sprint 4"
-    TEAMS ||--o{ REGISTRATIONS : "Sprint 4, optional"
+    COMPETITION_CATEGORIES ||--o{ REGISTRATIONS : "has many"
+    USERS ||--o{ REGISTRATIONS : "individual, optional"
+    TEAMS ||--o{ REGISTRATIONS : "team, optional"
     COMPETITIONS ||--o{ SUBMISSIONS : "planned"
     USERS ||--o{ SUBMISSIONS : "planned"
     SUBMISSIONS ||--o{ SCORES : "planned"
@@ -197,11 +197,27 @@ Full design: [TEAM_PARTICIPANT_DESIGN.md](TEAM_PARTICIPANT_DESIGN.md).
 
 ---
 
-## Tables (Sprint 4+ — planned)
+## Tables (Sprint 4 — implemented)
 
-### `registrations` *(Sprint 4)*
+Full design: [REGISTRATION_DESIGN.md](REGISTRATION_DESIGN.md).
 
-Links a user (solo) or **approved team** to a **competition category**, with status and deadline/capacity enforcement.
+### `registrations`
+
+Links a user (solo) or an **approved team** to a **competition category**. Exactly one of `user_id`/`team_id` is set (enforced at the service layer — see ADR-0023).
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint unsigned, PK | |
+| `competition_category_id` | FK → `competition_categories.id` | Cascade on delete |
+| `user_id` | FK → `users.id`, nullable | Individual registration |
+| `team_id` | FK → `teams.id`, nullable | Team registration |
+| `status` | string | `RegistrationStatus`: confirmed/withdrawn; indexed |
+| `withdrawn_at` | timestamp, nullable | Set on withdrawal |
+| timestamps | | `created_at` doubles as "registered at" — confirmation is instant, no separate column |
+
+**Unique:** `(competition_category_id, user_id)`, `(competition_category_id, team_id)` — MySQL/SQLite unique indexes permit multiple `NULL`s, so these only dedupe the non-null side per category. No `organization_id` column — scoped via `RegistrationOrganizationScope` (two-hop: category → competition → organization), per ADR-0016/0022/0023.
+
+## Tables (Sprint 5+ — planned)
 
 ### `submissions` *(Sprint 5)*
 
@@ -233,6 +249,7 @@ A judge's score for a submission against a criterion; a judge cannot score their
 | `2026_07_06_000003_create_teams_table` | `teams` |
 | `2026_07_06_000004_create_team_members_table` | `team_members` |
 | `2026_07_06_000005_create_team_invitations_table` | `team_invitations` |
+| `2026_09_04_164450_create_registrations_table` | `registrations` |
 
 ## Seed Data
 
@@ -251,3 +268,4 @@ Run with `php artisan migrate --seed`. These are local development credentials o
 - [DECISIONS.md](DECISIONS.md) — architectural decision records
 - [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md) — Sprint 2 competition module design
 - [TEAM_PARTICIPANT_DESIGN.md](TEAM_PARTICIPANT_DESIGN.md) — Sprint 3 team & participant module design
+- [REGISTRATION_DESIGN.md](REGISTRATION_DESIGN.md) — Sprint 4 registration module design
