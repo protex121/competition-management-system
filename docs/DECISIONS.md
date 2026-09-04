@@ -204,6 +204,24 @@ This log captures significant decisions, their context, and their consequences. 
 
 ---
 
+## ADR-0023 — Registration is a slot-based join of (user or team) + category
+
+- **Status:** Accepted
+- **Context:** Sprint 4 domain research. A `registrations` table links either an individual `user_id` or an approved `team_id` (never both) to a `competition_category_id`, per ADR-0017. Capacity (`max_participants`) could be interpreted as a headcount or as a count of registered entities.
+- **Decision:** Capacity is **slot-based**: one confirmed registration — individual or team, regardless of roster size — consumes exactly one slot against the effective `max_participants`. A team/individual may hold at most one *active* (non-`withdrawn`) registration per competition, enforced at the service layer (query-before-insert + `ValidationException`), same style as ADR-0019. Exactly-one-of-`user_id`/`team_id` and per-category duplicate prevention are enforced by a DB unique index on `(competition_category_id, user_id)` and `(competition_category_id, team_id)`; the "exactly one set" invariant itself is enforced at the model/service layer rather than a DB `CHECK` constraint, since the test suite runs on SQLite (in-memory) while dev/prod run MySQL, and Laravel's schema builder has no portable `check()` helper across both.
+- **Consequences:** Simple, predictable capacity math ("N teams/participants can register"), independent of team size. `RegistrationOrganizationScope` (two-hop: category → competition → organization) follows the existing "scope via parent" convention (ADR-0016/0022) — no `organization_id` column on `registrations`.
+
+---
+
+## ADR-0024 — EffectiveCategoryConfig resolver; database-channel confirmation notification; no registration approval step
+
+- **Status:** Accepted
+- **Context:** ADR-0012 deferred building a resolver for category/competition inherit-with-override until a module needed it — Sprint 4 is that module. Separately, Sprint 4 is the project's first use of Laravel Notifications, and team approval already happened in Sprint 3 (ADR-0021), so a second approval gate on registration itself would be redundant.
+- **Decision:** `App\Services\Registration\EffectiveCategoryConfig::for(CompetitionCategory $category)` resolves `max_participants` and `registration_ends_at` (category override ?? competition default) and exposes `isRegistrationOpen()` / `hasCapacity()`. Registration is instant on success — `RegistrationStatus`: `confirmed` or `withdrawn` only, no `pending`. Confirmation is delivered via a `database`-channel `RegistrationConfirmed` notification (not mail — no mail infrastructure exists yet; SMTP/Mailpit remains a Post-MVP item).
+- **Consequences:** No new "pending registration" UI/queue. Registration attempts that fail eligibility, deadline, or capacity checks are rejected outright with a clear reason (reusing `CheckParticipantEligibilityService`/`CheckTeamEligibilityService` from Sprint 3). The `database` notification channel requires the framework's `notifications` table migration (added in this sprint) and lays the groundwork for a future in-app notification center; email delivery for the same event can be added later without changing the calling code (Notification classes declare channels independently of triggering logic).
+
+---
+
 ## Superseded / historical notes
 
 - Early roadmap drafts assumed `spatie/laravel-permission` and invite-only registration for Sprint 1. Both were changed before implementation: roles are a PHP enum (ADR-0006) and self-serve organization signup is enabled (see [ROADMAP.md](ROADMAP.md)). Invite flow is deferred.
