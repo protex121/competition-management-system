@@ -18,4 +18,5 @@ require __DIR__.'/competitions.php';
 require __DIR__.'/participant.php';
 require __DIR__.'/teams.php';
 require __DIR__.'/registrations.php';
+require __DIR__.'/submissions.php';
 require __DIR__.'/events.php';
