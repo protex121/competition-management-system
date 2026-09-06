@@ -10,6 +10,7 @@ use App\Models\CompetitionJudge;
 use App\Models\ParticipantProfile;
 use App\Models\Registration;
 use App\Models\Rubric;
+use App\Models\RubricCriterion;
 use App\Models\Score;
 use App\Models\Submission;
 use App\Models\Team;
@@ -48,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Submission::class, SubmissionPolicy::class);
         Gate::policy(CompetitionJudge::class, CompetitionJudgePolicy::class);
         Gate::policy(Rubric::class, RubricPolicy::class);
+        Gate::policy(RubricCriterion::class, RubricPolicy::class);
         Gate::policy(Score::class, ScorePolicy::class);
     }
 }

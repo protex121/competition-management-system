@@ -9,6 +9,7 @@ use App\Enums\CompetitionStatus;
 use App\Enums\RegistrationMode;
 use App\Models\Competition;
 use App\Models\CompetitionCategory;
+use App\Models\Rubric;
 use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +64,10 @@ class CreateCompetitionService
                 'status' => CategoryStatus::Draft,
                 'sort_order' => 0,
                 'is_default' => true,
+            ]);
+
+            Rubric::withoutGlobalScopes()->create([
+                'competition_id' => $competition->id,
             ]);
 
             return $competition->load('categories');
