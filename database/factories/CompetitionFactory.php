@@ -32,6 +32,8 @@ class CompetitionFactory extends Factory
             'ends_at' => null,
             'registration_starts_at' => null,
             'registration_ends_at' => null,
+            'submission_starts_at' => null,
+            'submission_ends_at' => null,
             'max_participants' => null,
             'registration_mode' => RegistrationMode::Individual,
             'min_team_size' => null,

@@ -29,6 +29,8 @@ class Competition extends Model
         'ends_at',
         'registration_starts_at',
         'registration_ends_at',
+        'submission_starts_at',
+        'submission_ends_at',
         'max_participants',
         'registration_mode',
         'min_team_size',
@@ -46,6 +48,8 @@ class Competition extends Model
             'ends_at' => 'datetime',
             'registration_starts_at' => 'datetime',
             'registration_ends_at' => 'datetime',
+            'submission_starts_at' => 'datetime',
+            'submission_ends_at' => 'datetime',
         ];
     }
 

@@ -222,6 +222,24 @@ This log captures significant decisions, their context, and their consequences. 
 
 ---
 
+## ADR-0025 — Submission is a 1:1 upsert on Registration; any active team member can manage it
+
+- **Status:** Accepted
+- **Context:** Sprint 5 domain research. Each confirmed `registration` (individual or team entry) produces exactly one deliverable. Team registration (ADR-0023) requires the captain, but submission content is collaborative work.
+- **Decision:** `submissions.registration_id` is a **unique** FK — one submission per registration, edited in place (`Submission::updateOrCreate(['registration_id' => ...], [...])`) rather than versioned, mirroring `ParticipantProfile`'s 1:1-upsert shape (ADR-0018). `SubmissionPolicy::manage` authorizes the individual registrant **or any active member of the team** (not just the captain) — a deliberate departure from the captain-only rule for registering the team itself.
+- **Consequences:** No submission history/versioning (out of scope this sprint). No `organization_id` column on `submissions`; tenant isolation via a three-hop `SubmissionOrganizationScope` (`submissions.registration_id → registrations.competition_category_id → competition_categories.competition_id → competitions.organization_id`), extending the "scope via parent" convention (ADR-0016/0022/0023) one hop further.
+
+---
+
+## ADR-0026 — Draft/Finalized lock via EffectiveCategoryConfig extension; private file storage
+
+- **Status:** Accepted
+- **Context:** Submissions need an edit-then-lock lifecycle (title/description/link/file editable, then locked for judging) and a submission deadline. `EffectiveCategoryConfig` (ADR-0024) already resolves category/competition inherit-with-override for registration; a parallel `submission_starts_at`/`submission_ends_at` pair needed the same resolution. Separately, submission files may contain graded/sensitive participant work.
+- **Decision:** `SubmissionStatus`: `draft`/`finalized` only, one-way (`finalize` is terminal — no un-finalize this sprint, same "organizer read-only" posture as ADR-0024's registration boundary). `EffectiveCategoryConfig` gains `submissionStartsAt`/`submissionEndsAt` (category `submission_ends_at` override ?? competition default, no category-level start override — same asymmetry as the registration fields) and `isSubmissionOpen()`, rather than a new parallel class. Submission files are stored on the `local` (private) disk, not `public` (used for avatars) — served only through an authenticated `submissions.file.download` route gated by `SubmissionPolicy::view`. (User-confirmed.)
+- **Consequences:** One class (`EffectiveCategoryConfig`) is now the single source of truth for both registration and submission timing per category — simpler than tracking two resolvers, at the cost of that class growing with each new deadline-bearing module. File URLs are never public/guessable; downloading requires an authenticated, authorized request, at the cost of a slightly heavier download path (streamed through the app) versus a direct static-asset URL.
+
+---
+
 ## Superseded / historical notes
 
 - Early roadmap drafts assumed `spatie/laravel-permission` and invite-only registration for Sprint 1. Both were changed before implementation: roles are a PHP enum (ADR-0006) and self-serve organization signup is enabled (see [ROADMAP.md](ROADMAP.md)). Invite flow is deferred.

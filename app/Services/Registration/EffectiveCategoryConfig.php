@@ -19,6 +19,8 @@ readonly class EffectiveCategoryConfig
         public ?int $maxParticipants,
         public ?CarbonInterface $registrationStartsAt,
         public ?CarbonInterface $registrationEndsAt,
+        public ?CarbonInterface $submissionStartsAt,
+        public ?CarbonInterface $submissionEndsAt,
     ) {}
 
     public static function for(CompetitionCategory $category): self
@@ -31,6 +33,8 @@ readonly class EffectiveCategoryConfig
             maxParticipants: $category->max_participants ?? $competition?->max_participants,
             registrationStartsAt: $competition?->registration_starts_at,
             registrationEndsAt: $category->registration_ends_at ?? $competition?->registration_ends_at,
+            submissionStartsAt: $competition?->submission_starts_at,
+            submissionEndsAt: $category->submission_ends_at ?? $competition?->submission_ends_at,
         );
     }
 
@@ -41,6 +45,19 @@ readonly class EffectiveCategoryConfig
         }
 
         if ($this->registrationEndsAt !== null && $now->gt($this->registrationEndsAt)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function isSubmissionOpen(CarbonInterface $now): bool
+    {
+        if ($this->submissionStartsAt !== null && $now->lt($this->submissionStartsAt)) {
+            return false;
+        }
+
+        if ($this->submissionEndsAt !== null && $now->gt($this->submissionEndsAt)) {
             return false;
         }
 
