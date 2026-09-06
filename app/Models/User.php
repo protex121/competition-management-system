@@ -89,6 +89,11 @@ class User extends Authenticatable
         return $this->role === UserRole::Organizer;
     }
 
+    public function isJudge(): bool
+    {
+        return $this->role === UserRole::Judge;
+    }
+
     public function isDeactivated(): bool
     {
         return $this->deactivated_at !== null;

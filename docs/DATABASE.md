@@ -28,8 +28,13 @@ erDiagram
     USERS ||--o{ REGISTRATIONS : "individual, optional"
     TEAMS ||--o{ REGISTRATIONS : "team, optional"
     REGISTRATIONS ||--o| SUBMISSIONS : "1:1"
-    SUBMISSIONS ||--o{ SCORES : "planned"
-    USERS ||--o{ SCORES : "judges, planned"
+    COMPETITIONS ||--o| RUBRICS : "1:1"
+    RUBRICS ||--o{ RUBRIC_CRITERIA : "has many"
+    COMPETITIONS ||--o{ COMPETITION_JUDGES : "has many"
+    USERS ||--o{ COMPETITION_JUDGES : "judge"
+    SUBMISSIONS ||--o{ SCORES : "has many"
+    RUBRIC_CRITERIA ||--o{ SCORES : "has many"
+    USERS ||--o{ SCORES : "judge"
 ```
 
 ---
@@ -241,15 +246,63 @@ One deliverable per `registration` (individual or team entry) — 1:1, upserted 
 
 No `organization_id` column — scoped via `SubmissionOrganizationScope` (three-hop: registration → category → competition → organization), per ADR-0016/0022/0023/0025. Files are private (ADR-0026) — served only via an authenticated download route, never a public URL.
 
-## Tables (Sprint 6+ — planned)
+## Tables (Sprint 6 — implemented)
 
-### `rubrics` / `rubric_criteria` *(Sprint 6)*
+Full design: [JUDGING_DESIGN.md](JUDGING_DESIGN.md).
 
-Scoring structure for a competition.
+### `competition_judges`
 
-### `scores` *(Sprint 6)*
+Assigns a `Judge`-role user to a competition — structurally identical to `team_members` (ADR-0028).
 
-A judge's score for a submission against a criterion; a judge cannot score their own submission.
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint unsigned, PK | |
+| `competition_id` | FK → `competitions.id` | Cascade on delete |
+| `user_id` | FK → `users.id` | Cascade on delete |
+| `status` | string, default `active` | `CompetitionJudgeStatus`: active/removed |
+| timestamps | | |
+
+**Unique:** `(competition_id, user_id)`. **Index:** `(user_id, status)`. Scoped via `CompetitionOrganizationScope` (reused as-is — it already has a `competition_id` column, per ADR-0028).
+
+### `rubrics`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint unsigned, PK | |
+| `competition_id` | FK → `competitions.id`, **unique** | Cascade on delete — 1:1, auto-created with the competition (ADR-0027) |
+| timestamps | | |
+
+Scoped via `CompetitionOrganizationScope` (reused as-is, same as `competition_judges`).
+
+### `rubric_criteria`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint unsigned, PK | |
+| `rubric_id` | FK → `rubrics.id` | Cascade on delete |
+| `name` | string | |
+| `description` | text, nullable | |
+| `max_score` | unsigned small int | Floor is fixed at 0 (no `min_score` column) |
+| `sort_order` | unsigned small int, default 0 | Display order |
+| timestamps | | |
+
+No scope of its own — resolved via its parent `rubric`/`competition` in policies/services, same as `competition_categories`.
+
+### `scores`
+
+One judge's independent score for one submission against one criterion — never averaged this sprint (ADR-0028).
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint unsigned, PK | |
+| `submission_id` | FK → `submissions.id` | Cascade on delete |
+| `rubric_criterion_id` | FK → `rubric_criteria.id` | Cascade on delete |
+| `judge_id` | FK → `users.id` | Cascade on delete |
+| `score` | unsigned small int | Validated against the criterion's `max_score` at the service layer |
+| `comment` | text, nullable | |
+| timestamps | | |
+
+**Unique:** `(submission_id, rubric_criterion_id, judge_id)`. No `organization_id` column — scoped via a new `ScoreOrganizationScope` (four-hop: submission → registration → category → competition → organization), one hop past `SubmissionOrganizationScope`.
 
 ---
 
@@ -272,6 +325,10 @@ A judge's score for a submission against a criterion; a judge cannot score their
 | `2026_09_04_164450_create_registrations_table` | `registrations` |
 | `2026_09_04_172657_create_notifications_table` | `notifications` (framework stub) |
 | `2026_09_06_071348_create_submissions_table` | `submissions` |
+| `2026_09_06_093205_create_competition_judges_table` | `competition_judges` |
+| `2026_09_06_093206_create_rubrics_table` | `rubrics` |
+| `2026_09_06_093207_create_rubric_criteria_table` | `rubric_criteria` |
+| `2026_09_06_093208_create_scores_table` | `scores` |
 | `2026_09_06_071348_add_submission_settings_to_competitions_table` | Submission window on `competitions` |
 | `2026_09_06_071348_add_submission_ends_at_to_competition_categories_table` | Submission deadline override on `competition_categories` |
 
@@ -294,3 +351,4 @@ Run with `php artisan migrate --seed`. These are local development credentials o
 - [TEAM_PARTICIPANT_DESIGN.md](TEAM_PARTICIPANT_DESIGN.md) — Sprint 3 team & participant module design
 - [REGISTRATION_DESIGN.md](REGISTRATION_DESIGN.md) — Sprint 4 registration module design
 - [SUBMISSION_DESIGN.md](SUBMISSION_DESIGN.md) — Sprint 5 submission module design
+- [JUDGING_DESIGN.md](JUDGING_DESIGN.md) — Sprint 6 judging module design

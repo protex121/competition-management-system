@@ -240,6 +240,24 @@ This log captures significant decisions, their context, and their consequences. 
 
 ---
 
+## ADR-0027 — Rubric is 1:1 with Competition, auto-created like the default category
+
+- **Status:** Accepted
+- **Context:** Sprint 6 domain research. Judges score finalized submissions against a set of weighted-by-max-score criteria. A competition could plausibly have per-category rubrics, but nothing in the product plan calls for that yet, and requiring organizers to manually create a rubric before adding criteria is friction for no benefit.
+- **Decision:** `rubrics.competition_id` is a **unique** FK (1:1) and `CreateCompetitionService` creates the empty `Rubric` in the same transaction as the competition and its default "General" category — mirroring ADR-0015 exactly. Organizers only ever manage `RubricCriterion` rows; there is no "create rubric" UI step. Each criterion has a fixed floor of `0` and a configurable `max_score` — no `min_score` column, avoiding an unused field per `PROJECT_RULES.md`.
+- **Consequences:** One rubric per competition, not per category — if a future sprint needs per-category rubrics, this ADR is superseded. Deleting a `RubricCriterion` that already has `scores` referencing it is blocked at the service layer (data-integrity guard), not a DB constraint.
+
+---
+
+## ADR-0028 — Judge assignment mirrors team membership; scores are per-judge and un-aggregated; self-scoring is denied by policy
+
+- **Status:** Accepted
+- **Context:** A judge must be explicitly assigned to a competition (not any judge-role user in the org), must never score their own work (including as a team member), and Sprint 6 stops short of computing a final ranking (that's Sprint 7 — Leaderboard).
+- **Decision:** `competition_judges` (`competition_id`, `user_id`, `status`) is a structural copy of `team_members` — an "assignment with a revocable status" table, reusing `CompetitionOrganizationScope` directly (already parameterized by FK name) instead of a new scope class. `scores` stores one row per `(submission, criterion, judge)` — independent per-judge opinions, never averaged or ranked this sprint. `ScorePolicy::manage` inverts the `isOwnerOrActiveMember` check already duplicated in `RegistrationPolicy`/`SubmissionPolicy` (owner or active team member of the submission's registration → denied, even if the judge is otherwise validly assigned to the competition), and additionally requires the submission to be `finalized` and the competition to not yet be `closed` — reusing `Submission`'s and `Competition`'s existing state machines rather than adding a scoring-specific lock.
+- **Consequences:** No blind-judging infrastructure needed — a judge only ever reads/writes their own `Score` rows (enforced by policy, not a separate visibility flag). Aggregation, weighting, and rank computation are deferred; `scores` is schema-ready for Sprint 7 to consume without migration changes.
+
+---
+
 ## Superseded / historical notes
 
 - Early roadmap drafts assumed `spatie/laravel-permission` and invite-only registration for Sprint 1. Both were changed before implementation: roles are a PHP enum (ADR-0006) and self-serve organization signup is enabled (see [ROADMAP.md](ROADMAP.md)). Invite flow is deferred.
