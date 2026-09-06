@@ -17,7 +17,7 @@ Aggregation, weighting, and rank computation are **out of scope** — that is Sp
 
 ## Rubric
 
-Every competition gets an empty `Rubric` the moment it's created — the same auto-provisioning `CreateCompetitionService` already does for the default "General" category (ADR-0015, extended by ADR-0027). Organizers only ever manage `RubricCriterion` rows (`name`, optional `description`, `max_score`, `sort_order`); there is no separate "create a rubric" step. Every criterion's floor is `0` — only the ceiling (`max_score`) is configurable.
+Every competition gets an empty `Rubric` the moment it's created — the same auto-provisioning `CreateCompetitionService` already does for the default "General" category (ADR-0015, extended by ADR-0027). Organizers only ever manage `RubricCriterion` rows (`name`, optional `description`, `max_score`, `sort_order`); there is no separate "create a rubric" step. Every criterion's floor is `0` — only the ceiling (`max_score`) is configurable. `CreateRubricCriterionService` also `firstOrCreate`s the rubric defensively, so a competition that predates this feature (or was built via a factory in a test, bypassing the service) still gets one on its first criterion.
 
 ## Judge assignment
 
@@ -75,7 +75,8 @@ All of the following must hold (`ScorePolicy::manage`):
 | Policy | Ability | Rule |
 |---|---|---|
 | `CompetitionJudgePolicy` | `manage(actor, competition)` | Organizer of the competition's org, or super admin |
-| `RubricPolicy` | `manageCriteria(actor, competition)` | Same as above |
+| `RubricPolicy` | `create(actor, competition)` | Same as above — gates adding a criterion |
+| `RubricPolicy` | `update`/`delete(actor, criterion)` | Same rule, resolved via the criterion's `rubric.competition` (registered for both `Rubric` and `RubricCriterion`) |
 | `RubricPolicy` | `view(actor, competition)` | Organizer/super admin, **or** an actively-assigned judge (needs to see max scores while scoring) |
 | `ScorePolicy` | `manage(actor, submission)` | See "Eligibility to score a submission" above |
 | `ScorePolicy` | `viewAny(actor, competition)` | Organizer/super admin — read-only oversight, same posture as `RegistrationPolicy`/`SubmissionPolicy` |

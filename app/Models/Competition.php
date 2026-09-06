@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Competition extends Model
@@ -71,6 +72,16 @@ class Competition extends Model
     public function teams(): HasMany
     {
         return $this->hasMany(Team::class);
+    }
+
+    public function rubric(): HasOne
+    {
+        return $this->hasOne(Rubric::class);
+    }
+
+    public function judges(): HasMany
+    {
+        return $this->hasMany(CompetitionJudge::class);
     }
 
     public function allowsTeams(): bool
