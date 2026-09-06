@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type ManagedCategory } from '@/types';
 import { Link, router, useForm } from '@inertiajs/vue3';
-import { ListChecks, LoaderCircle, Pencil, Plus, Trash2 } from 'lucide-vue-next';
+import { FileText, ListChecks, LoaderCircle, Pencil, Plus, Trash2 } from 'lucide-vue-next';
 import { ref } from 'vue';
 
 interface Props {
@@ -273,6 +273,12 @@ const statusClass = (status: string): string => {
                         <Link :href="route('competitions.categories.registrations.index', { competition: competitionId, category: category.id })">
                             <ListChecks class="mr-2 h-4 w-4" />
                             Registrations
+                        </Link>
+                    </Button>
+                    <Button v-if="category.can.viewSubmissions" as-child type="button" variant="outline" size="sm">
+                        <Link :href="route('competitions.categories.submissions.index', { competition: competitionId, category: category.id })">
+                            <FileText class="mr-2 h-4 w-4" />
+                            Submissions
                         </Link>
                     </Button>
                     <Button v-if="category.can.activate" type="button" variant="outline" size="sm" @click="activateCategory(category)">

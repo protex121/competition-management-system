@@ -15,6 +15,7 @@ use App\Models\Competition;
 use App\Models\CompetitionCategory;
 use App\Models\Organization;
 use App\Models\Registration;
+use App\Models\Submission;
 use App\Services\Competition\ActivateCompetitionService;
 use App\Services\Competition\CloseCompetitionService;
 use App\Services\Competition\CreateCompetitionService;
@@ -81,6 +82,7 @@ class CompetitionController extends Controller
                     'activate' => $request->user()->can('activate', $category),
                     'disable' => $request->user()->can('disable', $category),
                     'viewRegistrations' => $request->user()->can('viewAny', [Registration::class, $competition]),
+                    'viewSubmissions' => $request->user()->can('viewAny', [Submission::class, $competition]),
                 ],
             ]);
 

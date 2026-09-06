@@ -1,8 +1,8 @@
 # Development Handoff
 
-**Last updated:** 2026-09-05  
-**Scope:** Sprint 0 through Sprint 4.  
-**Does not cover:** Sprint 5 and beyond — not started.
+**Last updated:** 2026-09-06  
+**Scope:** Sprint 0 through Sprint 5.  
+**Does not cover:** Sprint 6 and beyond — not started.
 
 Use this document when switching AI assistants (Claude, Cursor, etc.) or onboarding a new developer. The repository and `docs/` folder are the source of truth; this file summarizes **current state** and **how we work**.
 
@@ -16,8 +16,8 @@ Use this document when switching AI assistants (Claude, Cursor, etc.) or onboard
 | GitHub | [protex121/competition-management-system](https://github.com/protex121/competition-management-system) |
 | Integration branch | `develop` |
 | Production branch | `main` |
-| Latest milestone | Sprint 4 (Registration Management) merged to `develop` |
-| Tests | **287 passing** (`php artisan test`) |
+| Latest milestone | Sprint 5 (Submissions) merged to `develop` |
+| Tests | **313 passing** (`php artisan test`) |
 
 ---
 
@@ -107,6 +107,7 @@ Seed super admin: `php artisan db:seed --class=SuperAdminSeeder`
 | Sprint 3 | `docs/TEAM_PARTICIPANT_RESEARCH.md` | Domain research |
 | UX closure | `docs/SPRINT3_UX_CLOSURE.md` | Post-Sprint 3 UI gaps closed (#62–#66) |
 | Sprint 4 | `docs/REGISTRATION_DESIGN.md` | Registration module design (ADR-0023/0024) |
+| Sprint 5 | `docs/SUBMISSION_DESIGN.md` | Submission module design (ADR-0025/0026) |
 
 ---
 
@@ -190,6 +191,23 @@ Delivered:
 
 **Issues:** #72, #74, #76, #78 (see `docs/ROADMAP.md` Sprint 4 checklist).
 
+### Sprint 5 — Submissions ✅
+
+**Boundary:** One `submission` per `registration` (1:1, upserted in place — no versioning). `draft` → `finalized`, one-way; no organizer/participant un-finalize this sprint. Any active team member (not just the captain) can manage a team's submission.
+
+Delivered:
+
+| Area | Highlights |
+|------|------------|
+| Foundation | `submissions` table, `SubmissionStatus` enum, `SubmissionOrganizationScope` (three-hop tenant scope: registration → category → competition → organization), `EffectiveCategoryConfig` extended with submission-window fields |
+| Flow | `UpsertSubmissionService` (draft upsert), `UploadSubmissionFileService` (private `local` disk, replace deletes the old file), `FinalizeSubmissionService` (deadline + not-empty guard) |
+| Policies | `SubmissionPolicy` (manage, update, finalize, view, viewAny) |
+| UI | Participant submission edit page (linked from My Registrations), organizer per-category read-only "Submissions" review (linked from competition Edit), authenticated file download |
+
+**Issues:** #80, #82, #84 (see `docs/ROADMAP.md` Sprint 5 checklist).
+
+**Note on GitHub milestones:** milestone #6 was originally titled "Sprint 5 - Payment Management" — a stale plan that predated `ROADMAP.md` and was never reconciled with it. It was renamed to "Sprint 5 - Submissions" on 2026-09-06 to match the actual product plan (`PRD.md`'s lifecycle is register → submit → judge → rank; payments are a Post-MVP item). Milestones #7+ (Judge & Scoring, Dashboard, Notification, Certificate, REST API, Testing, Deployment) have **not** been checked against `ROADMAP.md` — verify before attaching Sprint 6+ issues to them.
+
 ---
 
 ## Route map (current)
@@ -203,6 +221,7 @@ routes/competitions.php → organizer competition + category CRUD, lifecycle
 routes/participant.php  → participant profile, competition browse
 routes/teams.php        → teams, invitations, approval, membership, coach
 routes/registrations.php → registration store (individual/team), withdraw, organizer review
+routes/submissions.php  → submission upsert, file upload/download, finalize, organizer review
 routes/events.php       → public competition page (guest + auth)
 ```
 
@@ -223,6 +242,10 @@ routes/events.php       → public competition page (guest + auth)
 | `competitions.registrations.store` | `/competitions/{competition}/registrations` (POST) | Participant (individual) |
 | `teams.registrations.store` | `/teams/{team}/registrations` (POST) | Captain |
 | `competitions.categories.registrations.index` | `/competitions/{id}/categories/{category}/registrations` | Organizer |
+| `registrations.submission.edit` | `/registrations/{registration}/submission` | Registrant / team member |
+| `submissions.finalize` | `/submissions/{submission}/finalize` (POST) | Registrant / team member |
+| `submissions.file.download` | `/submissions/{submission}/file` | Owner / team member / organizer |
+| `competitions.categories.submissions.index` | `/competitions/{id}/categories/{category}/submissions` | Organizer |
 
 ---
 
@@ -234,19 +257,22 @@ app/Http/Controllers/
 ├── Settings/          → Profile, Password (starter kit)
 ├── Competition/       → Competition, Category, Public, ParticipantCompetition
 ├── Team/              → Team, TeamMember, TeamCoach, TeamInvitation, TeamApproval, ParticipantProfile
-└── Registration/      → RegistrationController
+├── Registration/      → RegistrationController
+└── Submission/        → SubmissionController
 
 app/Services/
 ├── Identity/
 ├── Competition/
 ├── Team/
-└── Registration/      → EffectiveCategoryConfig, Register*Service, ListRegistrationsService, ...
+├── Registration/      → EffectiveCategoryConfig, Register*Service, ListRegistrationsService, ...
+└── Submission/        → Upsert/Upload/FinalizeSubmissionService, ListSubmissionsService
 
 app/Policies/
 ├── Identity/
 ├── Competition/
 ├── Team/
-└── Registration/      → RegistrationPolicy
+├── Registration/      → RegistrationPolicy
+└── Submission/        → SubmissionPolicy
 
 app/Notifications/
 └── Registration/      → RegistrationConfirmed (database channel; project's first Notification)
@@ -257,7 +283,8 @@ resources/js/pages/
 ├── competition/public/         → public show
 ├── participant/                → browse, profile
 ├── team/                       → teams, invitations
-└── registration/registrations/ → My Registrations, organizer Review
+├── registration/registrations/ → My Registrations, organizer Review
+└── submission/                 → participant Edit, organizer Review
 ```
 
 ---
@@ -281,7 +308,7 @@ resources/js/pages/
 | Status field | `PVTSSF_lAHOAlhBfs4BcglOzhXI1Ts` |
 | Done option ID | `98236657` |
 
-Issues #62–#66 and #72–#78 are closed and marked **Done** on the board. Sprint 4 issues/PRs are attached to milestone **`Sprint 4 - Registration Management`** — going forward, attach new issues/PRs to their sprint milestone (prior sprints did not do this consistently).
+Issues #62–#66, #72–#78, and #80–#84 are closed and marked **Done** on the board. Sprint 4/5 issues/PRs are attached to their sprint milestone (`Sprint 4 - Registration Management`, `Sprint 5 - Submissions`) — going forward, attach new issues/PRs to their sprint milestone (prior sprints did not do this consistently, and milestones #6+ may still be mistitled relative to `ROADMAP.md` — verify before use, see the Sprint 5 note above).
 
 ---
 
@@ -300,11 +327,12 @@ Issues #62–#66 and #72–#78 are closed and marked **Done** on the board. Spri
 2. Team show → invite, assign coach, transfer captain, submit for approval
 3. Sidebar **Invitations** (badge when pending)
 4. Competitions browse → **Register** (individual, picks a category) or, on an approved team's show page, **Register team**
-5. Sidebar **My Registrations** → withdraw
+5. Sidebar **My Registrations** → withdraw, or **Submission** → fill title/description/link, upload a file, **Finalize**
 
-### Organizer (registrations)
+### Organizer (registrations & submissions)
 
 1. Competition Edit → category row → **Registrations** (read-only list for that category)
+2. Competition Edit → category row → **Submissions** (read-only list; file names are downloadable links)
 
 ### Public
 
@@ -318,10 +346,11 @@ Issues #62–#66 and #72–#78 are closed and marked **Done** on the board. Spri
 These were deferred by design — **do not implement without a new sprint/issue**:
 
 - Email notifications (registration confirmation and team invitations are in-app/`database`-channel only — no mail infra yet)
-- Organizer-initiated registration cancellation (Sprint 4 organizer access is read-only oversight)
+- Organizer-initiated registration/submission cancellation or un-finalize (Sprint 4/5 organizer access is read-only oversight)
 - Waitlisting once a category is at capacity (registration is simply rejected, not queued)
+- Multiple files or file versioning per submission (one optional file, replaced in place — Sprint 5)
 - Committee / judge roles (enum exists, features not built)
-- Submissions, judging, payments (Sprint 5+)
+- Judging, scoring, leaderboards, payments (Sprint 6+)
 - JSON API (Inertia only for now; see `docs/API_GUIDELINES.md`)
 
 ---
@@ -336,8 +365,8 @@ Read first:
 2. PROJECT_RULES.md
 3. docs/ROADMAP.md
 
-Current state: Sprint 0–4 complete (through Registration Management, #72–#78).
-287 tests passing. Do NOT start Sprint 5 unless I explicitly ask.
+Current state: Sprint 0–5 complete (through Submissions, #80–#84).
+313 tests passing. Do NOT start Sprint 6 unless I explicitly ask.
 
 Workflow: one GitHub issue at a time, PR per issue, run tests before merge.
 
@@ -347,7 +376,15 @@ My task for this session:
 
 ---
 
-## Recent merge history (Sprint 4 — Registration Management)
+## Recent merge history (Sprint 5 — Submissions)
+
+```
+PR #81  feat(submission): foundation - model, migrations, policy, EffectiveCategoryConfig extension (#80)
+PR #83  feat(submission): upsert, file upload/download, finalize flow (#82)
+PR #85  feat(submission): UI - participant edit page, organizer review, links (#84)
+```
+
+### Sprint 4 — Registration Management
 
 ```
 PR #73  feat(registration): foundation - model, migration, policy, EffectiveCategoryConfig (#72)
@@ -372,4 +409,4 @@ For full history: `git log develop --oneline` or GitHub PR list.
 
 ## What comes next (not started — do not implement from this doc)
 
-Sprint 5 — **Submissions** is planned in `docs/ROADMAP.md` but **not implemented**. Start only when the owner prompts with explicit Sprint 5 requirements and issues.
+Sprint 6 — **Judging & Scoring** is planned in `docs/ROADMAP.md` but **not implemented**. Start only when the owner prompts with explicit Sprint 6 requirements and issues. Note: GitHub milestone #7 ("Sprint 6 - Judge & Scoring System") has not been verified against `ROADMAP.md`'s Sprint 6 scope — check before attaching issues to it (see the Sprint 5 milestone note above).

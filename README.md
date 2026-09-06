@@ -152,19 +152,20 @@ resources/js/
 | [docs/DATABASE.md](docs/DATABASE.md) | Schema (migrations are source of truth) |
 | [docs/COMPETITION_DESIGN.md](docs/COMPETITION_DESIGN.md) | Sprint 2 competition module design |
 | [docs/API_GUIDELINES.md](docs/API_GUIDELINES.md) | Inertia conventions now; JSON API plan for later |
-| [docs/HANDOFF.md](docs/HANDOFF.md) | **AI/developer handoff** — current state through Sprint 4 |
+| [docs/HANDOFF.md](docs/HANDOFF.md) | **AI/developer handoff** — current state through Sprint 5 |
 
 ## Current Status
 
-**Through Sprint 4 — complete on `develop`**
+**Through Sprint 5 — complete on `develop`**
 
 - Sprint 0: foundation ✅
 - Sprint 1: identity & multi-tenancy ✅
 - Sprint 2: competition & category management ✅
 - Sprint 3: team & participant management ✅ (+ UX closure #62–#66)
 - Sprint 4: registration management ✅ (#72–#78)
-- **287 tests passing**
+- Sprint 5: submissions ✅ (#80–#84)
+- **313 tests passing**
 
 For full handoff context (routes, workflow, dev login, prompt template): **[docs/HANDOFF.md](docs/HANDOFF.md)**
 
-Sprint 5 (submissions) is planned in [docs/ROADMAP.md](docs/ROADMAP.md) but **not started**.
+Sprint 6 (judging & scoring) is planned in [docs/ROADMAP.md](docs/ROADMAP.md) but **not started**.
