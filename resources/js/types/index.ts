@@ -100,6 +100,7 @@ export interface CategoryPermissions {
     activate: boolean;
     disable: boolean;
     viewRegistrations: boolean;
+    viewSubmissions: boolean;
 }
 
 export interface ManagedCategory extends CompetitionCategory {

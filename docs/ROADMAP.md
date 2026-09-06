@@ -6,7 +6,7 @@ A multi-tenant SaaS platform where organizations run hackathon-style competition
 
 Designed as a portfolio project demonstrating real-world Laravel engineering — not just CRUD.
 
-> **Handoff / current state:** [HANDOFF.md](HANDOFF.md) (through Sprint 4).
+> **Handoff / current state:** [HANDOFF.md](HANDOFF.md) (through Sprint 5).
 
 ## Domain
 
@@ -170,18 +170,20 @@ See [SPRINT3_UX_CLOSURE.md](SPRINT3_UX_CLOSURE.md).
 
 ---
 
-## Sprint 5 — Submissions
+## Sprint 5 — Submissions ✅
 
 **Goal:** Participants submit their work for judging.
 
+**Design doc:** ✅ [SUBMISSION_DESIGN.md](SUBMISSION_DESIGN.md) — ADR-0025/0026 in [DECISIONS.md](DECISIONS.md)
+
 ### Features
 
-- [ ] `Submission` model (title, description, files/links)
-- [ ] Submit / edit / finalize submission
-- [ ] Submission deadline enforcement
-- [ ] File upload validation
-- [ ] Submission listing (admin and participant views)
-- [ ] Feature tests
+- [x] `Submission` model (title, description, files/links) — 1:1 upsert on `Registration` ([#80](https://github.com/protex121/competition-management-system/issues/80))
+- [x] Submit / edit / finalize submission ([#82](https://github.com/protex121/competition-management-system/issues/82))
+- [x] Submission deadline enforcement (via `EffectiveCategoryConfig`) ([#80](https://github.com/protex121/competition-management-system/issues/80), [#82](https://github.com/protex121/competition-management-system/issues/82))
+- [x] File upload validation — private `local` disk, authenticated download ([#82](https://github.com/protex121/competition-management-system/issues/82))
+- [x] Submission listing (admin and participant views) ([#84](https://github.com/protex121/competition-management-system/issues/84))
+- [x] Feature tests ([#82](https://github.com/protex121/competition-management-system/issues/82))
 
 ---
 

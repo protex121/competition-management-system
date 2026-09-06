@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { ClipboardList } from 'lucide-vue-next';
 
 interface RegistrationItem {
@@ -102,9 +102,14 @@ const withdraw = (registrationId: number) => {
                                     </td>
                                     <td class="px-6 py-4 text-muted-foreground">{{ formatDate(registration.created_at) }}</td>
                                     <td class="px-6 py-4 text-right">
-                                        <Button v-if="registration.can.withdraw" variant="outline" size="sm" @click="withdraw(registration.id)">
-                                            Withdraw
-                                        </Button>
+                                        <div class="flex justify-end gap-2">
+                                            <Button v-if="registration.status === 'confirmed'" as-child variant="outline" size="sm">
+                                                <Link :href="route('registrations.submission.edit', registration.id)">Submission</Link>
+                                            </Button>
+                                            <Button v-if="registration.can.withdraw" variant="outline" size="sm" @click="withdraw(registration.id)">
+                                                Withdraw
+                                            </Button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <tr v-if="registrations.length === 0">
