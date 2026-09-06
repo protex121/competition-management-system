@@ -27,8 +27,7 @@ erDiagram
     COMPETITION_CATEGORIES ||--o{ REGISTRATIONS : "has many"
     USERS ||--o{ REGISTRATIONS : "individual, optional"
     TEAMS ||--o{ REGISTRATIONS : "team, optional"
-    COMPETITIONS ||--o{ SUBMISSIONS : "planned"
-    USERS ||--o{ SUBMISSIONS : "planned"
+    REGISTRATIONS ||--o| SUBMISSIONS : "1:1"
     SUBMISSIONS ||--o{ SCORES : "planned"
     USERS ||--o{ SCORES : "judges, planned"
 ```
@@ -114,6 +113,7 @@ Full design: [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md).
 | `status` | string | `CompetitionStatus`: draft/published/active/closed |
 | `starts_at` / `ends_at` | timestamp, nullable | Event schedule |
 | `registration_starts_at` / `registration_ends_at` | timestamp, nullable | Default registration window |
+| `submission_starts_at` / `submission_ends_at` | timestamp, nullable | *(Sprint 5)* Default submission window |
 | `max_participants` | unsigned int, nullable | Optional global capacity |
 | `registration_mode` | string, nullable | *(Sprint 3)* `RegistrationMode`: individual/team/both |
 | `min_team_size` | unsigned small int, nullable | *(Sprint 3)* Min roster when team mode |
@@ -134,6 +134,7 @@ Full design: [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md).
 | `sort_order` | unsigned small int | Display order; default 0 |
 | `max_participants` | unsigned int, nullable | Override capacity |
 | `registration_ends_at` | timestamp, nullable | Override reg deadline |
+| `submission_ends_at` | timestamp, nullable | *(Sprint 5)* Override submission deadline |
 | `is_default` | boolean | `true` for auto-created General |
 | timestamps + `deleted_at` | | Soft delete |
 
@@ -217,11 +218,30 @@ Links a user (solo) or an **approved team** to a **competition category**. Exact
 
 **Unique:** `(competition_category_id, user_id)`, `(competition_category_id, team_id)` — MySQL/SQLite unique indexes permit multiple `NULL`s, so these only dedupe the non-null side per category. No `organization_id` column — scoped via `RegistrationOrganizationScope` (two-hop: category → competition → organization), per ADR-0016/0022/0023.
 
-## Tables (Sprint 5+ — planned)
+## Tables (Sprint 5 — implemented)
 
-### `submissions` *(Sprint 5)*
+Full design: [SUBMISSION_DESIGN.md](SUBMISSION_DESIGN.md).
 
-Participant work: title, description, files/links, finalized state, deadline enforcement.
+### `submissions`
+
+One deliverable per `registration` (individual or team entry) — 1:1, upserted in place (ADR-0025).
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint unsigned, PK | |
+| `registration_id` | FK → `registrations.id`, **unique** | Cascade on delete |
+| `title` | string | |
+| `description` | text, nullable | |
+| `project_url` | string, nullable | Repo/demo link |
+| `file_path` | string, nullable | Path on the `local` (private) disk |
+| `file_original_name` | string, nullable | Display + download filename |
+| `status` | string, indexed | `SubmissionStatus`: draft/finalized |
+| `submitted_at` | timestamp, nullable | Set on finalize |
+| timestamps | | |
+
+No `organization_id` column — scoped via `SubmissionOrganizationScope` (three-hop: registration → category → competition → organization), per ADR-0016/0022/0023/0025. Files are private (ADR-0026) — served only via an authenticated download route, never a public URL.
+
+## Tables (Sprint 6+ — planned)
 
 ### `rubrics` / `rubric_criteria` *(Sprint 6)*
 
@@ -250,6 +270,10 @@ A judge's score for a submission against a criterion; a judge cannot score their
 | `2026_07_06_000004_create_team_members_table` | `team_members` |
 | `2026_07_06_000005_create_team_invitations_table` | `team_invitations` |
 | `2026_09_04_164450_create_registrations_table` | `registrations` |
+| `2026_09_04_172657_create_notifications_table` | `notifications` (framework stub) |
+| `2026_09_06_071348_create_submissions_table` | `submissions` |
+| `2026_09_06_071348_add_submission_settings_to_competitions_table` | Submission window on `competitions` |
+| `2026_09_06_071348_add_submission_ends_at_to_competition_categories_table` | Submission deadline override on `competition_categories` |
 
 ## Seed Data
 
@@ -269,3 +293,4 @@ Run with `php artisan migrate --seed`. These are local development credentials o
 - [COMPETITION_DESIGN.md](COMPETITION_DESIGN.md) — Sprint 2 competition module design
 - [TEAM_PARTICIPANT_DESIGN.md](TEAM_PARTICIPANT_DESIGN.md) — Sprint 3 team & participant module design
 - [REGISTRATION_DESIGN.md](REGISTRATION_DESIGN.md) — Sprint 4 registration module design
+- [SUBMISSION_DESIGN.md](SUBMISSION_DESIGN.md) — Sprint 5 submission module design

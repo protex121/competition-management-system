@@ -30,6 +30,7 @@ class CompetitionCategoryFactory extends Factory
             'sort_order' => 0,
             'max_participants' => null,
             'registration_ends_at' => null,
+            'submission_ends_at' => null,
             'is_default' => false,
         ];
     }

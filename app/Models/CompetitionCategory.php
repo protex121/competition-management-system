@@ -25,6 +25,7 @@ class CompetitionCategory extends Model
         'sort_order',
         'max_participants',
         'registration_ends_at',
+        'submission_ends_at',
         'is_default',
     ];
 
@@ -33,6 +34,7 @@ class CompetitionCategory extends Model
         return [
             'status' => CategoryStatus::class,
             'registration_ends_at' => 'datetime',
+            'submission_ends_at' => 'datetime',
             'is_default' => 'boolean',
         ];
     }
