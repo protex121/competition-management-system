@@ -4,7 +4,14 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Judging\CompetitionJudgeController;
 use App\Http\Controllers\Judging\RubricCriterionController;
+use App\Http\Controllers\Judging\ScoreController;
 use Illuminate\Support\Facades\Route;
+
+Route::middleware(['auth', 'verified', 'active'])->group(function () {
+    Route::get('judging/queue', [ScoreController::class, 'queue'])->name('judging.queue.index');
+    Route::get('submissions/{submission}/score', [ScoreController::class, 'edit'])->name('submissions.score.edit');
+    Route::put('submissions/{submission}/score', [ScoreController::class, 'update'])->name('submissions.score.update');
+});
 
 Route::middleware(['auth', 'verified', 'active', 'organizer'])->group(function () {
     Route::post('competitions/{competition}/judges', [CompetitionJudgeController::class, 'store'])
