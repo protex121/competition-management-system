@@ -152,11 +152,11 @@ resources/js/
 | [docs/DATABASE.md](docs/DATABASE.md) | Schema (migrations are source of truth) |
 | [docs/COMPETITION_DESIGN.md](docs/COMPETITION_DESIGN.md) | Sprint 2 competition module design |
 | [docs/API_GUIDELINES.md](docs/API_GUIDELINES.md) | Inertia conventions now; JSON API plan for later |
-| [docs/HANDOFF.md](docs/HANDOFF.md) | **AI/developer handoff** — current state through Sprint 6 |
+| [docs/HANDOFF.md](docs/HANDOFF.md) | **AI/developer handoff** — current state through Sprint 7 (MVP complete) |
 
 ## Current Status
 
-**Through Sprint 6 — complete on `develop`**
+**Through Sprint 7 — MVP complete on `develop`**
 
 - Sprint 0: foundation ✅
 - Sprint 1: identity & multi-tenancy ✅
@@ -165,8 +165,11 @@ resources/js/
 - Sprint 4: registration management ✅ (#72–#78)
 - Sprint 5: submissions ✅ (#80–#84)
 - Sprint 6: judging & scoring ✅ (#86–#92)
-- **349 tests passing**
+- Sprint 7: leaderboard & results ✅ (#94–#100)
+- **360 tests passing**
+
+The full product lifecycle — create → publish → register → submit → judge → rank — is implemented end to end.
 
 For full handoff context (routes, workflow, dev login, prompt template): **[docs/HANDOFF.md](docs/HANDOFF.md)**
 
-Sprint 7 (leaderboard & results) is planned in [docs/ROADMAP.md](docs/ROADMAP.md) but **not started**.
+Everything past Sprint 7 is Post-MVP (billing, org branding, real email, real-time leaderboard, 2FA, mobile API — see [docs/ROADMAP.md](docs/ROADMAP.md)'s "Future" section) and **not started**.

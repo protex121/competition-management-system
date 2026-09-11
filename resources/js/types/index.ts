@@ -258,4 +258,18 @@ export interface PaginatedTeams<T> {
     };
 }
 
+export interface LeaderboardEntryItem {
+    rank: number;
+    registrant: string;
+    type: 'individual' | 'team';
+    aggregate_score: number;
+    judge_count: number;
+}
+
+export interface LeaderboardCategory {
+    id: number;
+    name: string;
+    entries: LeaderboardEntryItem[];
+}
+
 export type BreadcrumbItemType = BreadcrumbItem;
