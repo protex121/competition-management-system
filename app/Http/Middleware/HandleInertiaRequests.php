@@ -52,7 +52,33 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
             ],
             'pendingInvitationsCount' => fn () => $this->pendingInvitationsCount($request),
+            'locale' => app()->getLocale(),
+            'availableLocales' => [
+                'en' => 'English',
+                'id' => 'Bahasa Indonesia',
+            ],
+            'translations' => fn () => $this->loadTranslations(),
         ]);
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private function loadTranslations(): array
+    {
+        $path = lang_path(app()->getLocale());
+
+        if (! is_dir($path)) {
+            return [];
+        }
+
+        $translations = [];
+
+        foreach (glob($path.'/*.php') ?: [] as $file) {
+            $translations[pathinfo($file, PATHINFO_FILENAME)] = require $file;
+        }
+
+        return $translations;
     }
 
     private function pendingInvitationsCount(Request $request): int

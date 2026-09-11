@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useTranslation } from '@/composables/useTranslation';
 import { Head, Link } from '@inertiajs/vue3';
 import { Clock, Eye, Gavel, ListChecks, Lock, ShieldCheck, SlidersHorizontal, Trophy, UploadCloud, UserCog, UserRoundCheck, Users2 } from 'lucide-vue-next';
-import { onMounted, onUnmounted, useTemplateRef } from 'vue';
+import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue';
+
+const { t } = useTranslation();
 
 interface Stage {
     icon: typeof Trophy;
@@ -12,28 +16,28 @@ interface Stage {
     description: string;
 }
 
-const stages: Stage[] = [
+const stages = computed<Stage[]>(() => [
     {
         icon: Users2,
-        title: 'Register',
-        description: 'Participants join solo or as an approved team, within a category’s deadline and capacity — the slot is gone the moment it’s confirmed.',
+        title: t('landing.stage_register'),
+        description: t('landing.stage_register_description'),
     },
     {
         icon: UploadCloud,
-        title: 'Submit',
-        description: 'Teams draft a title, description, link, and one file, editing freely right up until they finalize — then it locks for good.',
+        title: t('landing.stage_submit'),
+        description: t('landing.stage_submit_description'),
     },
     {
         icon: Gavel,
-        title: 'Judge',
-        description: 'Assigned judges score every finalized entry against the competition’s own rubric, and can never score their own work.',
+        title: t('landing.stage_judge'),
+        description: t('landing.stage_judge_description'),
     },
     {
         icon: Trophy,
-        title: 'Rank',
-        description: 'The moment a competition closes, scores aggregate into a ranked leaderboard and go live on a public results page.',
+        title: t('landing.stage_rank'),
+        description: t('landing.stage_rank_description'),
     },
-];
+]);
 
 interface Audience {
     icon: typeof Trophy;
@@ -41,41 +45,41 @@ interface Audience {
     description: string;
 }
 
-const audiences: Audience[] = [
+const audiences = computed<Audience[]>(() => [
     {
         icon: UserCog,
-        title: 'Organizers',
-        description: 'Create events, manage categories, review teams, assign judges, and oversee every registration and submission from one dashboard.',
+        title: t('landing.role_organizers'),
+        description: t('landing.role_organizers_description'),
     },
     {
         icon: UserRoundCheck,
-        title: 'Participants',
-        description: 'Build a profile, form or join a team, register for a track, and submit your work before the deadline — solo or together.',
+        title: t('landing.role_participants'),
+        description: t('landing.role_participants_description'),
     },
     {
         icon: ShieldCheck,
-        title: 'Judges',
-        description: 'Score exactly the submissions you’re assigned to, fairly — the platform blocks you from ever scoring your own entry.',
+        title: t('landing.role_judges'),
+        description: t('landing.role_judges_description'),
     },
-];
+]);
 
 interface Point {
     icon: typeof Trophy;
     text: string;
 }
 
-const judgingPoints: Point[] = [
-    { icon: ListChecks, text: 'Every score is entered against the competition’s own rubric — one scorecard, every criterion, in one action.' },
-    { icon: ShieldCheck, text: 'A judge can never score their own registration or their own team’s submission, even if they’re also competing.' },
-    { icon: Lock, text: 'Scores stay editable right up until the organizer closes the competition — then they’re frozen for good.' },
-];
+const judgingPoints = computed<Point[]>(() => [
+    { icon: ListChecks, text: t('landing.judges_point_rubric') },
+    { icon: ShieldCheck, text: t('landing.judges_point_self') },
+    { icon: Lock, text: t('landing.judges_point_lock') },
+]);
 
-const organizerPoints: Point[] = [
-    { icon: UserCog, text: 'Assign judges from your own organization’s members — revoke access just as easily.' },
-    { icon: SlidersHorizontal, text: 'Build a rubric per competition: name each criterion and set its own maximum score.' },
-    { icon: Clock, text: 'Registration and submission windows, plus per-category capacity, are enforced automatically — no manual policing.' },
-    { icon: Eye, text: 'Read-only oversight of every registration and submission, with live score counts and working file downloads.' },
-];
+const organizerPoints = computed<Point[]>(() => [
+    { icon: UserCog, text: t('landing.organizers_point_assign') },
+    { icon: SlidersHorizontal, text: t('landing.organizers_point_rubric') },
+    { icon: Clock, text: t('landing.organizers_point_windows') },
+    { icon: Eye, text: t('landing.organizers_point_oversight') },
+]);
 
 const heroIllustration = useTemplateRef<HTMLElement>('heroIllustration');
 const judgingIllustration = useTemplateRef<HTMLElement>('judgingIllustration');
@@ -107,7 +111,7 @@ onUnmounted(() => observer?.disconnect());
 </script>
 
 <template>
-    <Head title="Welcome" />
+    <Head :title="t('landing.page_title')" />
 
     <div class="flex min-h-screen flex-col bg-background text-foreground">
         <header class="border-b">
@@ -119,17 +123,18 @@ onUnmounted(() => observer?.disconnect());
                     <span class="truncate text-sm font-semibold tracking-tight">{{ $page.props.name }}</span>
                 </div>
                 <nav class="flex shrink-0 items-center gap-3 sm:gap-4">
+                    <LocaleSwitcher />
                     <Link v-if="$page.props.auth.user" :href="route('dashboard')">
-                        <Button size="sm">Dashboard</Button>
+                        <Button size="sm">{{ t('nav.dashboard') }}</Button>
                     </Link>
                     <template v-else>
                         <Link
                             :href="route('login')"
                             class="whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-foreground"
-                            >Log in</Link
+                            >{{ t('common.log_in') }}</Link
                         >
                         <Link :href="route('register')">
-                            <Button size="sm">Get started</Button>
+                            <Button size="sm">{{ t('landing.get_started') }}</Button>
                         </Link>
                     </template>
                 </nav>
@@ -141,22 +146,20 @@ onUnmounted(() => observer?.disconnect());
             <section class="mx-auto max-w-6xl px-6 pt-20 sm:pt-28">
                 <div class="mx-auto max-w-3xl text-center">
                     <p class="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                        Multi-tenant competition platform
+                        {{ t('landing.tagline') }}
                     </p>
                     <h1 class="text-4xl font-bold tracking-tight text-balance sm:text-5xl">
-                        Run your hackathon from registration to results.
+                        {{ t('landing.hero_title') }}
                     </h1>
                     <p class="mt-5 text-lg text-muted-foreground text-balance">
-                        One workspace for organizers, participants, and judges &mdash; teams register, submit their work, get
-                        scored against a shared rubric, and see a live leaderboard the moment your event closes. Every
-                        organization's data stays walled off from every other, on the same platform.
+                        {{ t('landing.hero_description') }}
                     </p>
                     <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
                         <Link :href="route('register')">
-                            <Button size="lg">Create your organization</Button>
+                            <Button size="lg">{{ t('landing.create_organization') }}</Button>
                         </Link>
                         <Link :href="route('login')">
-                            <Button size="lg" variant="outline">Log in</Button>
+                            <Button size="lg" variant="outline">{{ t('common.log_in') }}</Button>
                         </Link>
                     </div>
                 </div>
@@ -178,7 +181,7 @@ onUnmounted(() => observer?.disconnect());
                         </svg>
                     </div>
                     <p class="mt-3 text-center text-sm text-muted-foreground">
-                        A real leaderboard, computed the moment a competition closes &mdash; no export, no spreadsheet.
+                        {{ t('landing.hero_caption') }}
                     </p>
                 </div>
             </section>
@@ -186,9 +189,9 @@ onUnmounted(() => observer?.disconnect());
             <!-- Pipeline -->
             <section class="mt-20 border-y bg-muted/40 sm:mt-28">
                 <div class="mx-auto max-w-6xl px-6 py-16">
-                    <h2 class="text-center text-2xl font-bold tracking-tight">The full lifecycle, built in</h2>
+                    <h2 class="text-center text-2xl font-bold tracking-tight">{{ t('landing.pipeline_title') }}</h2>
                     <p class="mx-auto mt-2 max-w-2xl text-center text-muted-foreground">
-                        From the moment a competition opens to the moment it closes, every stage is one connected flow.
+                        {{ t('landing.pipeline_description') }}
                     </p>
                     <div class="mt-10 grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2 lg:grid-cols-4">
                         <div v-for="(stage, i) in stages" :key="stage.title" class="bg-background p-6">
@@ -205,11 +208,10 @@ onUnmounted(() => observer?.disconnect());
             <section class="mx-auto max-w-6xl px-6 py-16 sm:py-24">
                 <div class="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">For judges</p>
-                        <h2 class="mt-3 text-2xl font-bold tracking-tight text-balance sm:text-3xl">Judging that can't be gamed.</h2>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{{ t('landing.judges_eyebrow') }}</p>
+                        <h2 class="mt-3 text-2xl font-bold tracking-tight text-balance sm:text-3xl">{{ t('landing.judges_title') }}</h2>
                         <p class="mt-3 text-muted-foreground">
-                            Fairness is enforced by the platform, not by trust. A judge only ever sees what they're supposed to
-                            &mdash; and never what they aren't.
+                            {{ t('landing.judges_description') }}
                         </p>
                         <ul class="mt-6 space-y-4">
                             <li v-for="point in judgingPoints" :key="point.text" class="flex gap-3">
@@ -272,13 +274,12 @@ onUnmounted(() => observer?.disconnect());
                             </svg>
                         </div>
                         <div class="lg:order-1">
-                            <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">For organizers</p>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{{ t('landing.organizers_eyebrow') }}</p>
                             <h2 class="mt-3 text-2xl font-bold tracking-tight text-balance sm:text-3xl">
-                                Everything you need, nothing you have to police by hand.
+                                {{ t('landing.organizers_title') }}
                             </h2>
                             <p class="mt-3 text-muted-foreground">
-                                Set the rules once &mdash; the platform enforces them for every registration, every
-                                submission, every score.
+                                {{ t('landing.organizers_description') }}
                             </p>
                             <ul class="mt-6 space-y-4">
                                 <li v-for="point in organizerPoints" :key="point.text" class="flex gap-3">
@@ -293,7 +294,7 @@ onUnmounted(() => observer?.disconnect());
 
             <!-- Roles summary -->
             <section class="mx-auto max-w-6xl px-6 py-16 sm:py-24">
-                <h2 class="text-center text-2xl font-bold tracking-tight">Built for every role in your event</h2>
+                <h2 class="text-center text-2xl font-bold tracking-tight">{{ t('landing.roles_title') }}</h2>
                 <div class="mt-10 grid gap-6 sm:grid-cols-3">
                     <Card v-for="audience in audiences" :key="audience.title">
                         <CardContent class="p-6">
@@ -308,17 +309,16 @@ onUnmounted(() => observer?.disconnect());
             <!-- Final CTA -->
             <section class="border-t">
                 <div class="mx-auto max-w-6xl px-6 py-16 text-center sm:py-20">
-                    <h2 class="text-2xl font-bold tracking-tight text-balance sm:text-3xl">Ready to run your first event?</h2>
+                    <h2 class="text-2xl font-bold tracking-tight text-balance sm:text-3xl">{{ t('landing.cta_title') }}</h2>
                     <p class="mx-auto mt-3 max-w-xl text-muted-foreground">
-                        Create your organization, set up a competition, and invite your judges &mdash; you'll be
-                        collecting registrations within minutes.
+                        {{ t('landing.cta_description') }}
                     </p>
                     <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
                         <Link :href="route('register')">
-                            <Button size="lg">Create your organization</Button>
+                            <Button size="lg">{{ t('landing.create_organization') }}</Button>
                         </Link>
                         <Link :href="route('login')">
-                            <Button size="lg" variant="outline">Log in</Button>
+                            <Button size="lg" variant="outline">{{ t('common.log_in') }}</Button>
                         </Link>
                     </div>
                 </div>
@@ -329,8 +329,8 @@ onUnmounted(() => observer?.disconnect());
             <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-muted-foreground sm:flex-row">
                 <span>{{ $page.props.name }}</span>
                 <div class="flex items-center gap-4">
-                    <Link :href="route('login')" class="transition-colors hover:text-foreground">Log in</Link>
-                    <Link :href="route('register')" class="transition-colors hover:text-foreground">Register</Link>
+                    <Link :href="route('login')" class="transition-colors hover:text-foreground">{{ t('common.log_in') }}</Link>
+                    <Link :href="route('register')" class="transition-colors hover:text-foreground">{{ t('common.sign_up') }}</Link>
                 </div>
             </div>
         </footer>

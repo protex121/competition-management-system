@@ -28,6 +28,7 @@ use App\Policies\Team\ParticipantProfilePolicy;
 use App\Policies\Team\TeamInvitationPolicy;
 use App\Policies\Team\TeamPolicy;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -39,6 +40,13 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Every route lives under a {locale} prefix (see routes/web.php). This
+        // gives route() a baseline value for it even outside an actual HTTP
+        // request that went through SetLocale — tests calling route() directly,
+        // console commands, queued jobs/notifications building URLs. SetLocale
+        // overrides this per-request once a real {locale} segment is resolved.
+        URL::defaults(['locale' => config('app.locale', 'en')]);
+
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Competition::class, CompetitionPolicy::class);
         Gate::policy(CompetitionCategory::class, CompetitionCategoryPolicy::class);
