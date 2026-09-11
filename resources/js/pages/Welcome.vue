@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Head, Link } from '@inertiajs/vue3';
 import { Clock, Eye, Gavel, ListChecks, Lock, ShieldCheck, SlidersHorizontal, Trophy, UploadCloud, UserCog, UserRoundCheck, Users2 } from 'lucide-vue-next';
+import { onMounted, onUnmounted, useTemplateRef } from 'vue';
 
 interface Stage {
     icon: typeof Trophy;
@@ -75,6 +76,34 @@ const organizerPoints: Point[] = [
     { icon: Clock, text: 'Registration and submission windows, plus per-category capacity, are enforced automatically — no manual policing.' },
     { icon: Eye, text: 'Read-only oversight of every registration and submission, with live score counts and working file downloads.' },
 ];
+
+const heroIllustration = useTemplateRef<HTMLElement>('heroIllustration');
+const judgingIllustration = useTemplateRef<HTMLElement>('judgingIllustration');
+const organizerIllustration = useTemplateRef<HTMLElement>('organizerIllustration');
+
+let observer: IntersectionObserver | undefined;
+
+onMounted(() => {
+    const targets = [heroIllustration.value, judgingIllustration.value, organizerIllustration.value].filter(
+        (el): el is HTMLElement => el !== null,
+    );
+
+    observer = new IntersectionObserver(
+        (entries) => {
+            for (const entry of entries) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    observer?.unobserve(entry.target);
+                }
+            }
+        },
+        { threshold: 0.35 },
+    );
+
+    targets.forEach((el) => observer?.observe(el));
+});
+
+onUnmounted(() => observer?.disconnect());
 </script>
 
 <template>
@@ -134,18 +163,18 @@ const organizerPoints: Point[] = [
 
                 <!-- Hero illustration -->
                 <div class="mx-auto mt-16 max-w-3xl">
-                    <div class="flex items-center justify-center rounded-xl border bg-muted/30 px-6 py-14 sm:py-20">
+                    <div ref="heroIllustration" class="illustration flex items-center justify-center rounded-xl border bg-muted/30 px-6 py-14 sm:py-20">
                         <svg viewBox="0 0 480 260" class="h-auto w-full max-w-md" fill="none" aria-hidden="true">
                             <line x1="30" y1="234" x2="450" y2="234" class="stroke-border" stroke-width="2" />
-                            <rect x="88" y="130" width="84" height="104" rx="10" class="fill-muted" />
-                            <circle cx="130" cy="110" r="19" class="fill-background stroke-border" stroke-width="2" />
-                            <text x="130" y="117" text-anchor="middle" class="fill-foreground" font-size="16" font-weight="700">2</text>
-                            <rect x="198" y="78" width="84" height="156" rx="10" class="fill-foreground" />
-                            <circle cx="240" cy="58" r="22" class="fill-foreground stroke-border" stroke-width="2" />
-                            <text x="240" y="65" text-anchor="middle" class="fill-background" font-size="18" font-weight="700">1</text>
-                            <rect x="308" y="164" width="84" height="70" rx="10" class="fill-muted" />
-                            <circle cx="350" cy="144" r="19" class="fill-background stroke-border" stroke-width="2" />
-                            <text x="350" y="151" text-anchor="middle" class="fill-foreground" font-size="16" font-weight="700">3</text>
+                            <rect x="88" y="130" width="84" height="104" rx="10" class="podium-bar podium-bar-2 fill-muted" />
+                            <circle cx="130" cy="110" r="19" class="podium-badge podium-badge-2 fill-background stroke-border" stroke-width="2" />
+                            <text x="130" y="117" text-anchor="middle" class="podium-badge podium-badge-2 fill-foreground" font-size="16" font-weight="700">2</text>
+                            <rect x="198" y="78" width="84" height="156" rx="10" class="podium-bar podium-bar-1 fill-foreground" />
+                            <circle cx="240" cy="58" r="22" class="podium-badge podium-badge-1 fill-foreground stroke-border" stroke-width="2" />
+                            <text x="240" y="65" text-anchor="middle" class="podium-badge podium-badge-1 fill-background" font-size="18" font-weight="700">1</text>
+                            <rect x="308" y="164" width="84" height="70" rx="10" class="podium-bar podium-bar-3 fill-muted" />
+                            <circle cx="350" cy="144" r="19" class="podium-badge podium-badge-3 fill-background stroke-border" stroke-width="2" />
+                            <text x="350" y="151" text-anchor="middle" class="podium-badge podium-badge-3 fill-foreground" font-size="16" font-weight="700">3</text>
                         </svg>
                     </div>
                     <p class="mt-3 text-center text-sm text-muted-foreground">
@@ -189,11 +218,11 @@ const organizerPoints: Point[] = [
                             </li>
                         </ul>
                     </div>
-                    <div class="flex items-center justify-center rounded-xl border bg-muted/30 px-6 py-12">
+                    <div ref="judgingIllustration" class="illustration flex items-center justify-center rounded-xl border bg-muted/30 px-6 py-12">
                         <svg viewBox="0 0 480 320" class="h-auto w-full max-w-sm" fill="none" aria-hidden="true">
                             <rect x="90" y="36" width="300" height="256" rx="16" class="fill-card stroke-border" stroke-width="2" />
                             <rect x="195" y="20" width="90" height="26" rx="8" class="fill-muted stroke-border" stroke-width="2" />
-                            <g v-for="(row, idx) in [0, 1, 2]" :key="row">
+                            <g v-for="(row, idx) in [0, 1, 2]" :key="row" :class="`score-row score-row-${idx + 1}`">
                                 <rect :y="88 + idx * 62" x="120" width="130" height="10" rx="5" class="fill-muted-foreground/35" />
                                 <rect :y="108 + idx * 62" x="120" width="240" height="10" rx="5" class="fill-muted" />
                                 <rect
@@ -202,11 +231,17 @@ const organizerPoints: Point[] = [
                                     :width="idx === 0 ? 200 : idx === 1 ? 150 : 220"
                                     height="10"
                                     rx="5"
-                                    class="fill-foreground"
+                                    :class="`score-fill score-fill-${idx + 1} fill-foreground`"
                                 />
                             </g>
-                            <circle cx="342" cy="254" r="26" class="fill-foreground" />
-                            <path d="M330 254l8 8 16-17" class="stroke-background" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                            <circle cx="342" cy="254" r="26" class="checkmark-badge fill-foreground" />
+                            <path
+                                d="M330 254l8 8 16-17"
+                                class="checkmark-path stroke-background"
+                                stroke-width="3"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
                         </svg>
                     </div>
                 </div>
@@ -216,14 +251,23 @@ const organizerPoints: Point[] = [
             <section class="border-t bg-muted/40">
                 <div class="mx-auto max-w-6xl px-6 py-16 sm:py-24">
                     <div class="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-                        <div class="flex items-center justify-center rounded-xl border bg-muted/30 px-6 py-12 lg:order-2">
+                        <div
+                            ref="organizerIllustration"
+                            class="illustration flex items-center justify-center rounded-xl border bg-muted/30 px-6 py-12 lg:order-2"
+                        >
                             <svg viewBox="0 0 480 320" class="h-auto w-full max-w-sm" fill="none" aria-hidden="true">
                                 <rect x="60" y="30" width="360" height="260" rx="16" class="fill-card stroke-border" stroke-width="2" />
-                                <g v-for="(row, idx) in [0, 1, 2]" :key="row">
+                                <g v-for="(row, idx) in [0, 1, 2]" :key="row" :class="`org-row org-row-${idx + 1}`">
                                     <circle :cy="88 + idx * 62" cx="104" r="16" class="fill-muted" />
                                     <rect :y="82 + idx * 62" x="136" width="140" height="12" rx="6" class="fill-muted-foreground/35" />
                                     <rect :y="78 + idx * 62" x="336" width="44" height="22" rx="11" :class="idx !== 1 ? 'fill-foreground' : 'fill-muted'" />
-                                    <circle :cy="89 + idx * 62" :cx="idx !== 1 ? 369 : 347" r="8" class="fill-background" />
+                                    <circle
+                                        :cy="89 + idx * 62"
+                                        :cx="idx !== 1 ? 369 : 347"
+                                        r="8"
+                                        :class="idx !== 1 ? `toggle-knob toggle-knob-${idx + 1}` : ''"
+                                        class="fill-background"
+                                    />
                                 </g>
                             </svg>
                         </div>
@@ -292,3 +336,183 @@ const organizerPoints: Point[] = [
         </footer>
     </div>
 </template>
+
+<style scoped>
+@keyframes grow-up {
+    from {
+        transform: scaleY(0);
+    }
+    to {
+        transform: scaleY(1);
+    }
+}
+@keyframes pop-in {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+@keyframes fade-slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+@keyframes fill-bar {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+@keyframes badge-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+@keyframes draw-check {
+    from {
+        stroke-dashoffset: 40;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+@keyframes slide-knob {
+    from {
+        transform: translateX(-22px);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+/* Resting (pre-animation) states */
+.illustration .podium-bar {
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transform-box: fill-box;
+}
+.illustration .podium-badge {
+    opacity: 0;
+    transform: scale(0.5);
+    transform-origin: center;
+    transform-box: fill-box;
+}
+.illustration .score-row,
+.illustration .org-row {
+    opacity: 0;
+    transform: translateX(-8px);
+}
+.illustration .score-fill {
+    transform: scaleX(0);
+    transform-origin: left;
+    transform-box: fill-box;
+}
+.illustration .checkmark-badge {
+    opacity: 0;
+    transform: scale(0.6);
+    transform-origin: center;
+    transform-box: fill-box;
+}
+.illustration .checkmark-path {
+    stroke-dasharray: 40;
+    stroke-dashoffset: 40;
+}
+.illustration .toggle-knob {
+    transform: translateX(-22px);
+}
+
+/* Triggered once the illustration scrolls into view */
+.illustration.is-visible .podium-bar-1 {
+    animation: grow-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.illustration.is-visible .podium-bar-2 {
+    animation: grow-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+}
+.illustration.is-visible .podium-bar-3 {
+    animation: grow-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.3s forwards;
+}
+.illustration.is-visible .podium-badge-1 {
+    animation: pop-in 0.3s ease-out 0.55s forwards;
+}
+.illustration.is-visible .podium-badge-2 {
+    animation: pop-in 0.3s ease-out 0.7s forwards;
+}
+.illustration.is-visible .podium-badge-3 {
+    animation: pop-in 0.3s ease-out 0.85s forwards;
+}
+
+.illustration.is-visible .score-row-1 {
+    animation: fade-slide-in 0.4s ease-out forwards;
+}
+.illustration.is-visible .score-row-2 {
+    animation: fade-slide-in 0.4s ease-out 0.15s forwards;
+}
+.illustration.is-visible .score-row-3 {
+    animation: fade-slide-in 0.4s ease-out 0.3s forwards;
+}
+.illustration.is-visible .score-fill-1 {
+    animation: fill-bar 0.45s ease-out 0.25s forwards;
+}
+.illustration.is-visible .score-fill-2 {
+    animation: fill-bar 0.45s ease-out 0.4s forwards;
+}
+.illustration.is-visible .score-fill-3 {
+    animation: fill-bar 0.45s ease-out 0.55s forwards;
+}
+.illustration.is-visible .checkmark-badge {
+    animation: badge-pop 0.3s ease-out 0.8s forwards;
+}
+.illustration.is-visible .checkmark-path {
+    animation: draw-check 0.3s ease-out 0.95s forwards;
+}
+
+.illustration.is-visible .org-row-1 {
+    animation: fade-slide-in 0.4s ease-out forwards;
+}
+.illustration.is-visible .org-row-2 {
+    animation: fade-slide-in 0.4s ease-out 0.15s forwards;
+}
+.illustration.is-visible .org-row-3 {
+    animation: fade-slide-in 0.4s ease-out 0.3s forwards;
+}
+.illustration.is-visible .toggle-knob-1 {
+    animation: slide-knob 0.3s ease-out 0.3s forwards;
+}
+.illustration.is-visible .toggle-knob-3 {
+    animation: slide-knob 0.3s ease-out 0.6s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .illustration .podium-bar,
+    .illustration .podium-badge,
+    .illustration .score-row,
+    .illustration .score-fill,
+    .illustration .checkmark-badge,
+    .illustration .org-row,
+    .illustration .toggle-knob {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    .illustration .checkmark-path {
+        animation: none !important;
+        stroke-dashoffset: 0 !important;
+    }
+}
+</style>
