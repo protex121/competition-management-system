@@ -253,6 +253,6 @@ Cross-cutting concerns tracked across sprints:
 | First Event + Job pipeline | Sprint 2 | ✅ |
 | Team & participant domain researched | Sprint 3 | ✅ |
 | First Notification | Sprint 4 | ✅ |
-| Queue worker processing real jobs | Sprint 7 | ⏳ |
+| Queue worker processing real jobs | Sprint 7 | ✅ |
 | Docker production deployment tested | Sprint 7 | ⏳ |
 | Git workflow + CI on GitHub | When ready | ⏳ |
