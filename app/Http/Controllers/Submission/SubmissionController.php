@@ -11,6 +11,7 @@ use App\Models\Competition;
 use App\Models\CompetitionCategory;
 use App\Models\Registration;
 use App\Models\Submission;
+use App\Services\Judging\ListSubmissionScoresService;
 use App\Services\Submission\FinalizeSubmissionService;
 use App\Services\Submission\ListSubmissionsService;
 use App\Services\Submission\UploadSubmissionFileService;
@@ -92,10 +93,12 @@ class SubmissionController extends Controller
         Competition $competition,
         CompetitionCategory $category,
         ListSubmissionsService $service,
+        ListSubmissionScoresService $scoresService,
     ): Response {
         $this->authorize('viewAny', [Submission::class, $competition]);
 
         $submissions = $service->execute($category);
+        $scoreCounts = $scoresService->countsFor($submissions);
 
         return Inertia::render('submission/Review', [
             'competition' => [
@@ -107,7 +110,7 @@ class SubmissionController extends Controller
                 'name' => $category->name,
             ],
             'submissions' => $submissions
-                ->map(fn (Submission $submission) => $this->present($request, $submission, includeRegistrant: true))
+                ->map(fn (Submission $submission) => $this->present($request, $submission, includeRegistrant: true, scoreCount: $scoreCounts[$submission->id] ?? 0))
                 ->values(),
         ]);
     }
@@ -115,7 +118,7 @@ class SubmissionController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function present(Request $request, Submission $submission, bool $includeRegistrant = false): array
+    private function present(Request $request, Submission $submission, bool $includeRegistrant = false, ?int $scoreCount = null): array
     {
         $user = $request->user();
 
@@ -138,6 +141,10 @@ class SubmissionController extends Controller
             $registration = $submission->registration;
             $data['registrant'] = $registration->team?->name ?? $registration->user?->name;
             $data['type'] = $registration->isTeam() ? 'team' : 'individual';
+        }
+
+        if ($scoreCount !== null) {
+            $data['score_count'] = $scoreCount;
         }
 
         return $data;
