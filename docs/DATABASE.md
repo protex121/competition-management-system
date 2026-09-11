@@ -35,6 +35,8 @@ erDiagram
     SUBMISSIONS ||--o{ SCORES : "has many"
     RUBRIC_CRITERIA ||--o{ SCORES : "has many"
     USERS ||--o{ SCORES : "judge"
+    COMPETITION_CATEGORIES ||--o{ LEADERBOARD_ENTRIES : "has many"
+    SUBMISSIONS ||--o| LEADERBOARD_ENTRIES : "1:1"
 ```
 
 ---
@@ -306,6 +308,26 @@ One judge's independent score for one submission against one criterion — never
 
 ---
 
+## Tables (Sprint 7 — implemented)
+
+### `leaderboard_entries`
+
+One ranked row per finalized, **scored** submission within a category — computed once by `CalculateLeaderboardJob` when the competition closes (ADR-0029). A submission with zero scores never gets a row.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint unsigned, PK | |
+| `competition_category_id` | FK → `competition_categories.id` | Cascade on delete |
+| `submission_id` | FK → `submissions.id` | Cascade on delete |
+| `aggregate_score` | decimal(8,2) unsigned | Average of each judge's summed per-criterion total |
+| `judge_count` | unsigned small int | Number of judges who scored this submission |
+| `rank` | unsigned small int | 1-based, sequential, no shared ties |
+| timestamps | | |
+
+**Unique:** `(competition_category_id, submission_id)`. **Index:** `(competition_category_id, rank)`. No `organization_id` column — scoped via `RegistrationOrganizationScope`, reused directly (already parameterized by FK name, defaults to `competition_category_id`).
+
+---
+
 ## Migrations
 
 | Migration | Creates / Alters |
@@ -331,6 +353,7 @@ One judge's independent score for one submission against one criterion — never
 | `2026_09_06_093208_create_scores_table` | `scores` |
 | `2026_09_06_071348_add_submission_settings_to_competitions_table` | Submission window on `competitions` |
 | `2026_09_06_071348_add_submission_ends_at_to_competition_categories_table` | Submission deadline override on `competition_categories` |
+| `2026_09_11_103447_create_leaderboard_entries_table` | `leaderboard_entries` |
 
 ## Seed Data
 

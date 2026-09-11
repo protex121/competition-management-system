@@ -6,6 +6,7 @@ namespace App\Services\Competition;
 
 use App\Enums\CategoryStatus;
 use App\Enums\CompetitionStatus;
+use App\Events\Competition\CompetitionClosed;
 use App\Exceptions\Competition\InvalidCompetitionStatusTransitionException;
 use App\Models\Competition;
 use App\Models\User;
@@ -21,7 +22,7 @@ class CloseCompetitionService
             );
         }
 
-        return DB::transaction(function () use ($competition): Competition {
+        $competition = DB::transaction(function () use ($competition): Competition {
             $competition->update(['status' => CompetitionStatus::Closed]);
 
             $competition->categories()->update([
@@ -30,5 +31,9 @@ class CloseCompetitionService
 
             return $competition->fresh(['categories']);
         });
+
+        event(new CompetitionClosed($competition));
+
+        return $competition;
     }
 }
