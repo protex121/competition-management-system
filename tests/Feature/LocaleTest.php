@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -69,5 +70,38 @@ class LocaleTest extends TestCase
 
         $this->get('/id/login')
             ->assertInertia(fn ($page) => $page->where('locale', 'id'));
+    }
+
+    public function test_identity_and_competition_modules_share_their_translations(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+
+        $this->actingAs($organizer)
+            ->get('/id/users')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('locale', 'id')
+                ->where('translations.identity.index_description', 'Kelola pengguna di organisasi Anda'));
+
+        $this->actingAs($organizer)
+            ->get('/en/users')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('locale', 'en')
+                ->where('translations.identity.index_description', 'Manage users in your organization'));
+
+        $this->actingAs($organizer)
+            ->get('/id/competitions/create')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('locale', 'id')
+                ->where('translations.competition.create_title', 'Buat kompetisi'));
+
+        $this->actingAs($organizer)
+            ->get('/en/competitions/create')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('locale', 'en')
+                ->where('translations.competition.create_title', 'Create competition'));
     }
 }

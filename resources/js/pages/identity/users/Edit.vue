@@ -18,8 +18,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem, type ManagedUser, type RoleOption, type UserPermissions } from '@/types';
+import { useTranslation } from '@/composables/useTranslation';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
+import { computed } from 'vue';
 
 interface Props {
     user: ManagedUser;
@@ -29,10 +31,12 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Users', href: route('users.index') },
+const { t } = useTranslation();
+
+const breadcrumbs = computed<BreadcrumbItem[]>(() => [
+    { title: t('nav.users'), href: route('users.index') },
     { title: props.user.name, href: route('users.edit', props.user.id) },
-];
+]);
 
 const form = useForm({
     name: props.user.name,
@@ -62,12 +66,12 @@ const deleteUser = () => {
 </script>
 
 <template>
-    <Head :title="`Edit ${user.name}`" />
+    <Head :title="`${t('common.edit')} ${user.name}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4">
             <div class="flex items-start justify-between gap-4">
-                <Heading :title="user.name" description="Update user details and manage account status" />
+                <Heading :title="user.name" :description="t('identity.edit_description')" />
                 <span
                     class="inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium"
                     :class="
@@ -76,30 +80,30 @@ const deleteUser = () => {
                             : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                     "
                 >
-                    {{ user.deactivated_at ? 'Deactivated' : 'Active' }}
+                    {{ user.deactivated_at ? t('identity.status_deactivated') : t('identity.status_active') }}
                 </span>
             </div>
 
             <Card class="max-w-2xl">
                 <CardHeader>
-                    <CardTitle>Profile</CardTitle>
+                    <CardTitle>{{ t('identity.profile') }}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <form @submit.prevent="submit" class="space-y-6">
                         <div class="grid gap-2">
-                            <Label for="name">Name</Label>
+                            <Label for="name">{{ t('identity.label_name') }}</Label>
                             <Input id="name" v-model="form.name" required autocomplete="name" />
                             <InputError :message="form.errors.name" />
                         </div>
 
                         <div class="grid gap-2">
-                            <Label for="email">Email address</Label>
+                            <Label for="email">{{ t('identity.label_email') }}</Label>
                             <Input id="email" type="email" v-model="form.email" required autocomplete="email" />
                             <InputError :message="form.errors.email" />
                         </div>
 
                         <div class="grid gap-2">
-                            <Label for="role">Role</Label>
+                            <Label for="role">{{ t('identity.label_role') }}</Label>
                             <select
                                 id="role"
                                 v-model="form.role"
@@ -116,10 +120,10 @@ const deleteUser = () => {
                         <div class="flex items-center gap-4">
                             <Button type="submit" :disabled="form.processing">
                                 <LoaderCircle v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
-                                Save changes
+                                {{ t('common.save_changes') }}
                             </Button>
                             <Button as-child variant="outline">
-                                <Link :href="route('users.index')">Back to list</Link>
+                                <Link :href="route('users.index')">{{ t('common.back_to_list') }}</Link>
                             </Button>
                             <TransitionRoot
                                 :show="form.recentlySuccessful"
@@ -128,7 +132,7 @@ const deleteUser = () => {
                                 leave="transition ease-in-out"
                                 leave-to="opacity-0"
                             >
-                                <p class="text-sm text-muted-foreground">Saved.</p>
+                                <p class="text-sm text-muted-foreground">{{ t('common.saved') }}</p>
                             </TransitionRoot>
                         </div>
                     </form>
@@ -137,45 +141,49 @@ const deleteUser = () => {
 
             <Card v-if="can.deactivate || can.reactivate" class="max-w-2xl">
                 <CardHeader>
-                    <CardTitle>Account status</CardTitle>
+                    <CardTitle>{{ t('identity.account_status') }}</CardTitle>
                 </CardHeader>
                 <CardContent class="space-y-4">
                     <p class="text-sm text-muted-foreground">
-                        Deactivated users cannot log in but their data is preserved. You can reactivate them later.
+                        {{ t('identity.account_status_description') }}
                     </p>
                     <div class="flex gap-3">
-                        <Button v-if="can.deactivate" type="button" variant="outline" @click="deactivate"> Deactivate user </Button>
-                        <Button v-if="can.reactivate" type="button" @click="reactivate"> Reactivate user </Button>
+                        <Button v-if="can.deactivate" type="button" variant="outline" @click="deactivate">
+                            {{ t('identity.deactivate_user') }}
+                        </Button>
+                        <Button v-if="can.reactivate" type="button" @click="reactivate">
+                            {{ t('identity.reactivate_user') }}
+                        </Button>
                     </div>
                 </CardContent>
             </Card>
 
             <Card v-if="can.delete" class="max-w-2xl border-red-200 dark:border-red-900/50">
                 <CardHeader>
-                    <CardTitle class="text-red-600 dark:text-red-400">Danger zone</CardTitle>
+                    <CardTitle class="text-red-600 dark:text-red-400">{{ t('identity.danger_zone') }}</CardTitle>
                 </CardHeader>
                 <CardContent class="space-y-4">
                     <p class="text-sm text-muted-foreground">
-                        Soft-deleting a user removes them from the organization. This action can be reversed by a platform admin.
+                        {{ t('identity.delete_user_description') }}
                     </p>
                     <Dialog>
                         <DialogTrigger as-child>
-                            <Button variant="destructive">Delete user</Button>
+                            <Button variant="destructive">{{ t('identity.delete_user') }}</Button>
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>
-                                <DialogTitle>Delete {{ user.name }}?</DialogTitle>
+                                <DialogTitle>{{ t('identity.delete_user_dialog_title', { name: user.name }) }}</DialogTitle>
                                 <DialogDescription>
-                                    This will soft-delete the user account. They will no longer appear in the user list and cannot log in.
+                                    {{ t('identity.delete_user_dialog_description') }}
                                 </DialogDescription>
                             </DialogHeader>
                             <DialogFooter>
                                 <DialogClose as-child>
-                                    <Button variant="secondary">Cancel</Button>
+                                    <Button variant="secondary">{{ t('common.cancel') }}</Button>
                                 </DialogClose>
                                 <Button variant="destructive" :disabled="deleteForm.processing" @click="deleteUser">
                                     <LoaderCircle v-if="deleteForm.processing" class="mr-2 h-4 w-4 animate-spin" />
-                                    Delete user
+                                    {{ t('identity.delete_user') }}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>

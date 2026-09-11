@@ -228,4 +228,23 @@ class PublicCompetitionTest extends TestCase
                 ->has('participation.action_url')
             );
     }
+
+    public function test_public_page_participation_cta_message_is_translated(): void
+    {
+        $organization = Organization::factory()->create(['slug' => 'acme-corp']);
+        $competition = Competition::factory()->teamMode()->published()->create([
+            'organization_id' => $organization->id,
+            'slug' => 'open-event',
+        ]);
+
+        $this->get('/id/events/'.$organization->slug.'/'.$competition->slug)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('participation.message', 'Masuk atau buat akun untuk ikut serta.'));
+
+        $this->get('/en/events/'.$organization->slug.'/'.$competition->slug)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('participation.message', 'Log in or create an account to participate.'));
+    }
 }
