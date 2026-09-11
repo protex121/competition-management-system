@@ -6,7 +6,7 @@ A multi-tenant SaaS platform where organizations run hackathon-style competition
 
 Designed as a portfolio project demonstrating real-world Laravel engineering — not just CRUD.
 
-> **Handoff / current state:** [HANDOFF.md](HANDOFF.md) (through Sprint 5).
+> **Handoff / current state:** [HANDOFF.md](HANDOFF.md) (through Sprint 6).
 
 ## Domain
 
@@ -187,19 +187,21 @@ See [SPRINT3_UX_CLOSURE.md](SPRINT3_UX_CLOSURE.md).
 
 ---
 
-## Sprint 6 — Judging & Scoring
+## Sprint 6 — Judging & Scoring ✅
 
 **Goal:** Judges score submissions against a rubric.
 
+**Design doc:** ✅ [JUDGING_DESIGN.md](JUDGING_DESIGN.md) — ADR-0027/0028 in [DECISIONS.md](DECISIONS.md)
+
 ### Features
 
-- [ ] `Rubric` and `RubricCriterion` models
-- [ ] `Score` model (judge/submission/criterion)
-- [ ] Judge assignment to competition
-- [ ] Scoring interface (Inertia page)
-- [ ] Score validation (min/max per criterion)
-- [ ] Prevent judges from scoring own submissions
-- [ ] Feature tests
+- [x] `Rubric` and `RubricCriterion` models — rubric auto-created with the competition (ADR-0027) ([#86](https://github.com/protex121/competition-management-system/issues/86))
+- [x] `Score` model (judge/submission/criterion) ([#86](https://github.com/protex121/competition-management-system/issues/86))
+- [x] Judge assignment to competition ([#88](https://github.com/protex121/competition-management-system/issues/88))
+- [x] Scoring interface (Inertia page) — judge queue + score entry ([#92](https://github.com/protex121/competition-management-system/issues/92))
+- [x] Score validation (min/max per criterion) — floor fixed at 0, ceiling per criterion ([#90](https://github.com/protex121/competition-management-system/issues/90))
+- [x] Prevent judges from scoring own submissions ([#86](https://github.com/protex121/competition-management-system/issues/86), [#90](https://github.com/protex121/competition-management-system/issues/90))
+- [x] Feature tests ([#88](https://github.com/protex121/competition-management-system/issues/88), [#90](https://github.com/protex121/competition-management-system/issues/90))
 
 ---
 

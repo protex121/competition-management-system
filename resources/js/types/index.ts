@@ -137,6 +137,22 @@ export interface CompetitionPermissions {
     close: boolean;
     createCategory: boolean;
     reviewTeams: boolean;
+    manageJudges: boolean;
+    createRubricCriterion: boolean;
+}
+
+export interface CompetitionJudgeAssignment {
+    id: number;
+    user: { id: number; name: string; email: string };
+}
+
+export interface RubricCriterionItem {
+    id: number;
+    name: string;
+    description: string | null;
+    max_score: number;
+    sort_order: number;
+    can: { update: boolean; delete: boolean };
 }
 
 export interface PaginatedCompetitions<T> {

@@ -15,6 +15,7 @@ interface SubmissionItem {
     submitted_at: string | null;
     registrant: string | null;
     type: 'individual' | 'team';
+    score_count: number;
 }
 
 interface Props {
@@ -78,6 +79,7 @@ const formatDate = (value: string | null): string => {
                                     <th class="px-6 py-3 font-medium">Title</th>
                                     <th class="px-6 py-3 font-medium">Status</th>
                                     <th class="px-6 py-3 font-medium">Submitted</th>
+                                    <th class="px-6 py-3 font-medium">Scores</th>
                                     <th class="px-6 py-3 text-right font-medium">File</th>
                                 </tr>
                             </thead>
@@ -97,6 +99,9 @@ const formatDate = (value: string | null): string => {
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-muted-foreground">{{ formatDate(submission.submitted_at) }}</td>
+                                    <td class="px-6 py-4 text-muted-foreground">
+                                        {{ submission.score_count }} judge{{ submission.score_count === 1 ? '' : 's' }}
+                                    </td>
                                     <td class="px-6 py-4 text-right">
                                         <a
                                             v-if="submission.has_file"
@@ -109,7 +114,7 @@ const formatDate = (value: string | null): string => {
                                     </td>
                                 </tr>
                                 <tr v-if="submissions.length === 0">
-                                    <td colspan="6" class="px-6 py-8 text-center text-muted-foreground">No submissions yet.</td>
+                                    <td colspan="7" class="px-6 py-8 text-center text-muted-foreground">No submissions yet.</td>
                                 </tr>
                             </tbody>
                         </table>
