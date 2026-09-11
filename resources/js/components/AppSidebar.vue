@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, ClipboardList, Folder, LayoutGrid, Mail, Trophy, UserCircle, Users } from 'lucide-vue-next';
+import { BookOpen, ClipboardList, Folder, Gavel, LayoutGrid, Mail, Trophy, UserCircle, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -24,6 +24,8 @@ const canManageCompetitions = computed(() => {
 });
 
 const isParticipant = computed(() => page.props.auth.user?.role === 'participant');
+
+const isJudge = computed(() => page.props.auth.user?.role === 'judge');
 
 const pendingInvitationsCount = computed(() => page.props.pendingInvitationsCount ?? 0);
 
@@ -57,6 +59,14 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: 'My profile',
             href: route('participant.profile.edit'),
             icon: UserCircle,
+        });
+    }
+
+    if (isJudge.value) {
+        items.push({
+            title: 'Judging Queue',
+            href: route('judging.queue.index'),
+            icon: Gavel,
         });
     }
 

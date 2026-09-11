@@ -1,8 +1,8 @@
 # Development Handoff
 
-**Last updated:** 2026-09-06  
-**Scope:** Sprint 0 through Sprint 5.  
-**Does not cover:** Sprint 6 and beyond — not started.
+**Last updated:** 2026-09-11  
+**Scope:** Sprint 0 through Sprint 6.  
+**Does not cover:** Sprint 7 and beyond — not started.
 
 Use this document when switching AI assistants (Claude, Cursor, etc.) or onboarding a new developer. The repository and `docs/` folder are the source of truth; this file summarizes **current state** and **how we work**.
 
@@ -16,8 +16,8 @@ Use this document when switching AI assistants (Claude, Cursor, etc.) or onboard
 | GitHub | [protex121/competition-management-system](https://github.com/protex121/competition-management-system) |
 | Integration branch | `develop` |
 | Production branch | `main` |
-| Latest milestone | Sprint 5 (Submissions) merged to `develop` |
-| Tests | **313 passing** (`php artisan test`) |
+| Latest milestone | Sprint 6 (Judging & Scoring) merged to `develop` |
+| Tests | **349 passing** (`php artisan test`) |
 
 ---
 
@@ -108,6 +108,7 @@ Seed super admin: `php artisan db:seed --class=SuperAdminSeeder`
 | UX closure | `docs/SPRINT3_UX_CLOSURE.md` | Post-Sprint 3 UI gaps closed (#62–#66) |
 | Sprint 4 | `docs/REGISTRATION_DESIGN.md` | Registration module design (ADR-0023/0024) |
 | Sprint 5 | `docs/SUBMISSION_DESIGN.md` | Submission module design (ADR-0025/0026) |
+| Sprint 6 | `docs/JUDGING_DESIGN.md` | Judging module design (ADR-0027/0028) |
 
 ---
 
@@ -206,7 +207,23 @@ Delivered:
 
 **Issues:** #80, #82, #84 (see `docs/ROADMAP.md` Sprint 5 checklist).
 
-**Note on GitHub milestones:** milestone #6 was originally titled "Sprint 5 - Payment Management" — a stale plan that predated `ROADMAP.md` and was never reconciled with it. It was renamed to "Sprint 5 - Submissions" on 2026-09-06 to match the actual product plan (`PRD.md`'s lifecycle is register → submit → judge → rank; payments are a Post-MVP item). Milestones #7+ (Judge & Scoring, Dashboard, Notification, Certificate, REST API, Testing, Deployment) have **not** been checked against `ROADMAP.md` — verify before attaching Sprint 6+ issues to them.
+**Note on GitHub milestones:** milestone #6 was originally titled "Sprint 5 - Payment Management" — a stale plan that predated `ROADMAP.md` and was never reconciled with it. It was renamed to "Sprint 5 - Submissions" on 2026-09-06 to match the actual product plan (`PRD.md`'s lifecycle is register → submit → judge → rank; payments are a Post-MVP item). Milestone #7 ("Sprint 6 - Judge & Scoring System") was checked against `ROADMAP.md`'s Sprint 6 and matched closely enough (its description also mentions "rankings," which is Sprint 7/Leaderboard scope) — no rename needed. Milestones #8+ (Dashboard, Notification, Certificate, REST API, Testing, Deployment) have **not** been checked — verify before attaching Sprint 7+ issues to them.
+
+### Sprint 6 — Judging & scoring ✅
+
+**Boundary:** A `Rubric` is 1:1 with a `Competition`, auto-created alongside it (ADR-0027) — organizers only ever manage `RubricCriterion` rows, no separate "create a rubric" step. `Score` rows are per-judge, per-criterion, independent and never aggregated this sprint (ADR-0028) — ranking is Sprint 7 (Leaderboard). A judge must be actively assigned to a competition (`competition_judges`, mirrors `team_members`) and can never score their own registration/team's submission.
+
+Delivered:
+
+| Area | Highlights |
+|------|------------|
+| Foundation | `competition_judges`, `rubrics`, `rubric_criteria`, `scores` tables; `CompetitionJudgeStatus` enum; `CompetitionOrganizationScope` reused as-is for `CompetitionJudge`/`Rubric` (already parameterized by FK name — no new scope class needed for them); new `ScoreOrganizationScope` (four-hop); `User::isJudge()` |
+| Assignment & rubric | `AssignJudgeService`/`RemoveJudgeService`/`ListOrganizationJudgesService` (mirror Sprint 3's coach-assignment services); `CreateRubricCriterionService`/`UpdateRubricCriterionService`/`DeleteRubricCriterionService` (delete blocked once scores exist); `CreateCompetitionService` now also auto-creates the `Rubric` |
+| Scoring flow | `SubmitScoreService` (full-scorecard upsert, requires every criterion, 0..max_score range); `ListJudgeQueueService` (filters through `ScorePolicy::manage` itself — no duplicated exclusion logic); `ListSubmissionScoresService` (organizer score count, extends the existing Submissions Review page) |
+| Policies | `CompetitionJudgePolicy`, `RubricPolicy` (registered for both `Rubric` and `RubricCriterion`), `ScorePolicy` (the self-scoring guard) |
+| UI | Judge "Judging Queue" + score-entry page, "Judges"/"Rubric" cards on competition Edit, "Scores" column on Submissions Review, sidebar nav entry for judges |
+
+**Issues:** #86, #88, #90, #92 (see `docs/ROADMAP.md` Sprint 6 checklist).
 
 ---
 
@@ -222,6 +239,7 @@ routes/participant.php  → participant profile, competition browse
 routes/teams.php        → teams, invitations, approval, membership, coach
 routes/registrations.php → registration store (individual/team), withdraw, organizer review
 routes/submissions.php  → submission upsert, file upload/download, finalize, organizer review
+routes/judging.php      → judge assignment, rubric criteria, judge queue, scoring
 routes/events.php       → public competition page (guest + auth)
 ```
 
@@ -246,6 +264,10 @@ routes/events.php       → public competition page (guest + auth)
 | `submissions.finalize` | `/submissions/{submission}/finalize` (POST) | Registrant / team member |
 | `submissions.file.download` | `/submissions/{submission}/file` | Owner / team member / organizer |
 | `competitions.categories.submissions.index` | `/competitions/{id}/categories/{category}/submissions` | Organizer |
+| `judging.queue.index` | `/judging/queue` | Judge |
+| `submissions.score.edit` | `/submissions/{submission}/score` | Assigned judge |
+| `competitions.judges.store` | `/competitions/{id}/judges` (POST) | Organizer |
+| `competitions.rubric-criteria.store` | `/competitions/{id}/rubric-criteria` (POST) | Organizer |
 
 ---
 
@@ -258,21 +280,24 @@ app/Http/Controllers/
 ├── Competition/       → Competition, Category, Public, ParticipantCompetition
 ├── Team/              → Team, TeamMember, TeamCoach, TeamInvitation, TeamApproval, ParticipantProfile
 ├── Registration/      → RegistrationController
-└── Submission/        → SubmissionController
+├── Submission/        → SubmissionController
+└── Judging/           → CompetitionJudgeController, RubricCriterionController, ScoreController
 
 app/Services/
 ├── Identity/
 ├── Competition/
 ├── Team/
 ├── Registration/      → EffectiveCategoryConfig, Register*Service, ListRegistrationsService, ...
-└── Submission/        → Upsert/Upload/FinalizeSubmissionService, ListSubmissionsService
+├── Submission/        → Upsert/Upload/FinalizeSubmissionService, ListSubmissionsService
+└── Judging/           → Assign/RemoveJudgeService, Rubric criterion CRUD, SubmitScoreService, ListJudgeQueueService
 
 app/Policies/
 ├── Identity/
 ├── Competition/
 ├── Team/
 ├── Registration/      → RegistrationPolicy
-└── Submission/        → SubmissionPolicy
+├── Submission/        → SubmissionPolicy
+└── Judging/            → CompetitionJudgePolicy, RubricPolicy, ScorePolicy
 
 app/Notifications/
 └── Registration/      → RegistrationConfirmed (database channel; project's first Notification)
@@ -284,7 +309,8 @@ resources/js/pages/
 ├── participant/                → browse, profile
 ├── team/                       → teams, invitations
 ├── registration/registrations/ → My Registrations, organizer Review
-└── submission/                 → participant Edit, organizer Review
+├── submission/                 → participant Edit, organizer Review
+└── judging/                    → judge Queue, ScoreSubmission
 ```
 
 ---
@@ -308,7 +334,7 @@ resources/js/pages/
 | Status field | `PVTSSF_lAHOAlhBfs4BcglOzhXI1Ts` |
 | Done option ID | `98236657` |
 
-Issues #62–#66, #72–#78, and #80–#84 are closed and marked **Done** on the board. Sprint 4/5 issues/PRs are attached to their sprint milestone (`Sprint 4 - Registration Management`, `Sprint 5 - Submissions`) — going forward, attach new issues/PRs to their sprint milestone (prior sprints did not do this consistently, and milestones #6+ may still be mistitled relative to `ROADMAP.md` — verify before use, see the Sprint 5 note above).
+Issues #62–#66, #72–#78, #80–#84, and #86–#92 are closed and marked **Done** on the board. Sprint 4/5/6 issues/PRs are attached to their sprint milestone (`Sprint 4 - Registration Management`, `Sprint 5 - Submissions`, `Sprint 6 - Judge & Scoring System`) — going forward, attach new issues/PRs to their sprint milestone (prior sprints did not do this consistently, and milestones #8+ may still be mistitled relative to `ROADMAP.md` — verify before use, see the Sprint 6 note above).
 
 ---
 
@@ -329,10 +355,16 @@ Issues #62–#66, #72–#78, and #80–#84 are closed and marked **Done** on the
 4. Competitions browse → **Register** (individual, picks a category) or, on an approved team's show page, **Register team**
 5. Sidebar **My Registrations** → withdraw, or **Submission** → fill title/description/link, upload a file, **Finalize**
 
-### Organizer (registrations & submissions)
+### Organizer (registrations, submissions & judging)
 
 1. Competition Edit → category row → **Registrations** (read-only list for that category)
-2. Competition Edit → category row → **Submissions** (read-only list; file names are downloadable links)
+2. Competition Edit → category row → **Submissions** (read-only list; file names are downloadable links, plus a Scores count)
+3. Competition Edit → **Judges** card → assign an org user with the Judge role; **Rubric** card → add criteria (name + max score)
+
+### Judge
+
+1. Sidebar **Judging Queue** → finalized submissions across your assigned competitions (your own registration never appears)
+2. **Score** a submission → fill every criterion (0..max), optional comment → **Save scorecard**; badge flips to Scored, button becomes **Rescore**
 
 ### Public
 
@@ -349,8 +381,10 @@ These were deferred by design — **do not implement without a new sprint/issue*
 - Organizer-initiated registration/submission cancellation or un-finalize (Sprint 4/5 organizer access is read-only oversight)
 - Waitlisting once a category is at capacity (registration is simply rejected, not queued)
 - Multiple files or file versioning per submission (one optional file, replaced in place — Sprint 5)
-- Committee / judge roles (enum exists, features not built)
-- Judging, scoring, leaderboards, payments (Sprint 6+)
+- Committee role (enum exists, features not built); judge role now has real features (Sprint 6)
+- Organizer un-finalizing/reopening a locked scorecard (scores stay editable by the judge until the competition closes, per ADR-0028 — no admin override this sprint)
+- Score aggregation, weighting, rankings, leaderboards, payments (Sprint 7+)
+- Per-category rubrics (one rubric per competition — ADR-0027)
 - JSON API (Inertia only for now; see `docs/API_GUIDELINES.md`)
 
 ---
@@ -365,8 +399,8 @@ Read first:
 2. PROJECT_RULES.md
 3. docs/ROADMAP.md
 
-Current state: Sprint 0–5 complete (through Submissions, #80–#84).
-313 tests passing. Do NOT start Sprint 6 unless I explicitly ask.
+Current state: Sprint 0–6 complete (through Judging & Scoring, #86–#92).
+349 tests passing. Do NOT start Sprint 7 unless I explicitly ask.
 
 Workflow: one GitHub issue at a time, PR per issue, run tests before merge.
 
@@ -376,7 +410,16 @@ My task for this session:
 
 ---
 
-## Recent merge history (Sprint 5 — Submissions)
+## Recent merge history (Sprint 6 — Judging & Scoring)
+
+```
+PR #87  feat(judging): foundation - models, migrations, policies, ScoreOrganizationScope (#86)
+PR #89  feat(judging): judge assignment & rubric management (#88)
+PR #91  feat(judging): scoring flow - scorecard submit, judge queue, score summary (#90)
+PR #93  feat(judging): UI - queue, score entry, organizer Judges/Rubric cards, score count (#92)
+```
+
+### Sprint 5 — Submissions
 
 ```
 PR #81  feat(submission): foundation - model, migrations, policy, EffectiveCategoryConfig extension (#80)
@@ -409,4 +452,4 @@ For full history: `git log develop --oneline` or GitHub PR list.
 
 ## What comes next (not started — do not implement from this doc)
 
-Sprint 6 — **Judging & Scoring** is planned in `docs/ROADMAP.md` but **not implemented**. Start only when the owner prompts with explicit Sprint 6 requirements and issues. Note: GitHub milestone #7 ("Sprint 6 - Judge & Scoring System") has not been verified against `ROADMAP.md`'s Sprint 6 scope — check before attaching issues to it (see the Sprint 5 milestone note above).
+Sprint 7 — **Leaderboard & Results** is planned in `docs/ROADMAP.md` but **not implemented**. Start only when the owner prompts with explicit Sprint 7 requirements and issues. Note: GitHub milestone #8 onward has not been verified against `ROADMAP.md`'s later sprints — check before attaching issues to any of them (see the Sprint 6 milestone note above).

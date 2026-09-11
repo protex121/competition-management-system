@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Competition;
 
+use App\Enums\CompetitionJudgeStatus;
 use App\Exceptions\Competition\InvalidCompetitionStatusTransitionException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Competition\ActivateCompetitionRequest;
@@ -13,8 +14,11 @@ use App\Http\Requests\Competition\StoreCompetitionRequest;
 use App\Http\Requests\Competition\UpdateCompetitionRequest;
 use App\Models\Competition;
 use App\Models\CompetitionCategory;
+use App\Models\CompetitionJudge;
 use App\Models\Organization;
 use App\Models\Registration;
+use App\Models\Rubric;
+use App\Models\RubricCriterion;
 use App\Models\Submission;
 use App\Services\Competition\ActivateCompetitionService;
 use App\Services\Competition\CloseCompetitionService;
@@ -23,6 +27,7 @@ use App\Services\Competition\DeleteCompetitionService;
 use App\Services\Competition\ListCompetitionsService;
 use App\Services\Competition\PublishCompetitionService;
 use App\Services\Competition\UpdateCompetitionService;
+use App\Services\Judging\ListOrganizationJudgesService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -57,11 +62,15 @@ class CompetitionController extends Controller
         return to_route('competitions.edit', $competition);
     }
 
-    public function edit(Request $request, Competition $competition): Response
-    {
+    public function edit(
+        Request $request,
+        Competition $competition,
+        ListOrganizationJudgesService $judgesService,
+    ): Response {
         $this->authorize('view', $competition);
 
         $competition->load(['organization', 'categories']);
+        $user = $request->user();
 
         $categories = $competition->categories
             ->sortBy('sort_order')
@@ -86,10 +95,49 @@ class CompetitionController extends Controller
                 ],
             ]);
 
+        $canManageJudges = $user->can('manage', [CompetitionJudge::class, $competition]);
+
+        $judges = CompetitionJudge::withoutGlobalScopes()
+            ->where('competition_id', $competition->id)
+            ->where('status', CompetitionJudgeStatus::Active)
+            ->with('user')
+            ->get()
+            ->map(fn (CompetitionJudge $assignment) => [
+                'id' => $assignment->id,
+                'user' => [
+                    'id' => $assignment->user->id,
+                    'name' => $assignment->user->name,
+                    'email' => $assignment->user->email,
+                ],
+            ])
+            ->values();
+
+        $availableJudges = $canManageJudges ? $judgesService->execute($competition)->values()->all() : [];
+
+        $rubric = Rubric::withoutGlobalScopes()->where('competition_id', $competition->id)->first();
+        $rubricCriteria = ($rubric?->criteria()->get() ?? collect())
+            ->map(fn (RubricCriterion $criterion) => [
+                'id' => $criterion->id,
+                'name' => $criterion->name,
+                'description' => $criterion->description,
+                'max_score' => $criterion->max_score,
+                'sort_order' => $criterion->sort_order,
+                'can' => [
+                    'update' => $user->can('update', $criterion),
+                    'delete' => $user->can('delete', $criterion),
+                ],
+            ])
+            ->values();
+
         return Inertia::render('competition/competitions/Edit', [
             'competition' => $competition,
             'categories' => $categories,
+            'judges' => $judges,
+            'availableJudges' => $availableJudges,
+            'rubricCriteria' => $rubricCriteria,
             'can' => [
+                'manageJudges' => $canManageJudges,
+                'createRubricCriterion' => $user->can('create', [Rubric::class, $competition]),
                 'update' => $request->user()->can('update', $competition),
                 'delete' => $request->user()->can('delete', $competition),
                 'publish' => $request->user()->can('publish', $competition),

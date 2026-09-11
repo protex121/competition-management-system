@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { TransitionRoot } from '@headlessui/vue';
+import CategoryList from '@/components/Competition/CategoryList.vue';
+import RegistrationSettingsFields from '@/components/Competition/RegistrationSettingsFields.vue';
 import DateTimePicker from '@/components/DateTimePicker.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import JudgesList from '@/components/Judging/JudgesList.vue';
+import RubricCriteriaList from '@/components/Judging/RubricCriteriaList.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -18,16 +21,31 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
-import CategoryList from '@/components/Competition/CategoryList.vue';
-import RegistrationSettingsFields from '@/components/Competition/RegistrationSettingsFields.vue';
-import { type BreadcrumbItem, type Competition, type CompetitionPermissions, type ManagedCategory } from '@/types';
+import {
+    type BreadcrumbItem,
+    type Competition,
+    type CompetitionJudgeAssignment,
+    type CompetitionPermissions,
+    type ManagedCategory,
+    type RubricCriterionItem,
+} from '@/types';
+import { TransitionRoot } from '@headlessui/vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 import { computed } from 'vue';
 
+interface JudgeOption {
+    id: number;
+    name: string;
+    email: string;
+}
+
 interface Props {
     competition: Competition;
     categories: ManagedCategory[];
+    judges: CompetitionJudgeAssignment[];
+    availableJudges: JudgeOption[];
+    rubricCriteria: RubricCriterionItem[];
     can: CompetitionPermissions;
 }
 
@@ -177,33 +195,19 @@ const statusClass = (status: string): string => {
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="grid gap-2">
                                 <Label for="registration_starts_at">Registration opens</Label>
-                                <DateTimePicker
-                                    id="registration_starts_at"
-                                    v-model="form.registration_starts_at"
-                                    :disabled="!can.update"
-                                />
+                                <DateTimePicker id="registration_starts_at" v-model="form.registration_starts_at" :disabled="!can.update" />
                                 <InputError :message="form.errors.registration_starts_at" />
                             </div>
                             <div class="grid gap-2">
                                 <Label for="registration_ends_at">Registration closes</Label>
-                                <DateTimePicker
-                                    id="registration_ends_at"
-                                    v-model="form.registration_ends_at"
-                                    :disabled="!can.update"
-                                />
+                                <DateTimePicker id="registration_ends_at" v-model="form.registration_ends_at" :disabled="!can.update" />
                                 <InputError :message="form.errors.registration_ends_at" />
                             </div>
                         </div>
 
                         <div class="grid gap-2">
                             <Label for="max_participants">Max participants</Label>
-                            <Input
-                                id="max_participants"
-                                v-model="form.max_participants"
-                                type="number"
-                                min="1"
-                                :disabled="!can.update"
-                            />
+                            <Input id="max_participants" v-model="form.max_participants" type="number" min="1" :disabled="!can.update" />
                             <InputError :message="form.errors.max_participants" />
                         </div>
                     </CardContent>
@@ -253,11 +257,30 @@ const statusClass = (status: string): string => {
                     <CardTitle>Categories</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <CategoryList
+                    <CategoryList :competition-id="competition.id" :categories="categories" :can-create="can.createCategory" />
+                </CardContent>
+            </Card>
+
+            <Card v-if="judges.length > 0 || can.manageJudges" class="max-w-2xl">
+                <CardHeader>
+                    <CardTitle>Judges</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <JudgesList
                         :competition-id="competition.id"
-                        :categories="categories"
-                        :can-create="can.createCategory"
+                        :judges="judges"
+                        :available-judges="availableJudges"
+                        :can-manage="can.manageJudges"
                     />
+                </CardContent>
+            </Card>
+
+            <Card v-if="rubricCriteria.length > 0 || can.createRubricCriterion" class="max-w-2xl">
+                <CardHeader>
+                    <CardTitle>Rubric</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <RubricCriteriaList :competition-id="competition.id" :criteria="rubricCriteria" :can-create="can.createRubricCriterion" />
                 </CardContent>
             </Card>
 
