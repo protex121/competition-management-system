@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem, type Organization, type PaginatedUsers, type User } from '@/types';
+import { useTranslation } from '@/composables/useTranslation';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
 import { computed } from 'vue';
@@ -15,12 +16,13 @@ interface Props {
 
 defineProps<Props>();
 
+const { t } = useTranslation();
 const page = usePage();
 const isSuperAdmin = computed(() => page.props.auth.user?.role === 'super-admin');
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Users', href: route('users.index') },
-];
+const breadcrumbs = computed<BreadcrumbItem[]>(() => [
+    { title: t('nav.users'), href: route('users.index') },
+]);
 
 const formatRole = (role: string): string =>
     role
@@ -32,17 +34,17 @@ const organizationName = (organization: Organization | null | undefined): string
 </script>
 
 <template>
-    <Head title="Users" />
+    <Head :title="t('nav.users')" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4">
             <div class="mb-8">
                 <div class="flex items-start justify-between gap-4">
-                    <Heading title="Users" description="Manage users in your organization" :show-separator="false" />
+                    <Heading :title="t('nav.users')" :description="t('identity.index_description')" :show-separator="false" />
                     <Button as-child class="shrink-0">
                         <Link :href="route('users.create')">
                             <Plus class="mr-2 h-4 w-4" />
-                            Add user
+                            {{ t('identity.add_user') }}
                         </Link>
                     </Button>
                 </div>
@@ -51,19 +53,19 @@ const organizationName = (organization: Organization | null | undefined): string
 
             <Card>
                 <CardHeader>
-                    <CardTitle>All users</CardTitle>
+                    <CardTitle>{{ t('identity.all_users') }}</CardTitle>
                 </CardHeader>
                 <CardContent class="p-0">
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="border-b text-left text-muted-foreground">
-                                    <th class="px-6 py-3 font-medium">Name</th>
-                                    <th class="px-6 py-3 font-medium">Email</th>
-                                    <th class="px-6 py-3 font-medium">Role</th>
-                                    <th v-if="isSuperAdmin" class="px-6 py-3 font-medium">Organization</th>
-                                    <th class="px-6 py-3 font-medium">Status</th>
-                                    <th class="px-6 py-3 font-medium text-right">Actions</th>
+                                    <th class="px-6 py-3 font-medium">{{ t('identity.th_name') }}</th>
+                                    <th class="px-6 py-3 font-medium">{{ t('identity.th_email') }}</th>
+                                    <th class="px-6 py-3 font-medium">{{ t('identity.th_role') }}</th>
+                                    <th v-if="isSuperAdmin" class="px-6 py-3 font-medium">{{ t('identity.th_organization') }}</th>
+                                    <th class="px-6 py-3 font-medium">{{ t('identity.th_status') }}</th>
+                                    <th class="px-6 py-3 font-medium text-right">{{ t('identity.th_actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -83,18 +85,18 @@ const organizationName = (organization: Organization | null | undefined): string
                                                     : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                                             "
                                         >
-                                            {{ user.deactivated_at ? 'Deactivated' : 'Active' }}
+                                            {{ user.deactivated_at ? t('identity.status_deactivated') : t('identity.status_active') }}
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-right">
                                         <Button as-child variant="outline" size="sm">
-                                            <Link :href="route('users.edit', user.id)">Edit</Link>
+                                            <Link :href="route('users.edit', user.id)">{{ t('common.edit') }}</Link>
                                         </Button>
                                     </td>
                                 </tr>
                                 <tr v-if="users.data.length === 0">
                                     <td :colspan="isSuperAdmin ? 6 : 5" class="px-6 py-8 text-center text-muted-foreground">
-                                        No users found.
+                                        {{ t('identity.empty_users') }}
                                     </td>
                                 </tr>
                             </tbody>

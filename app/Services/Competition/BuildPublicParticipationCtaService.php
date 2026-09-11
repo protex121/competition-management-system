@@ -31,7 +31,7 @@ class BuildPublicParticipationCtaService
             return [
                 'visible' => true,
                 'status' => 'closed',
-                'message' => 'Registration for this competition has ended.',
+                'message' => __('competition.cta_closed_message'),
             ];
         }
 
@@ -43,7 +43,7 @@ class BuildPublicParticipationCtaService
             return [
                 'visible' => true,
                 'status' => 'registration_closed',
-                'message' => 'Registration is closed for this competition.',
+                'message' => __('competition.cta_registration_closed_message'),
             ];
         }
 
@@ -51,7 +51,7 @@ class BuildPublicParticipationCtaService
             return [
                 'visible' => true,
                 'status' => 'registration_not_open',
-                'message' => 'Registration has not opened yet.',
+                'message' => __('competition.cta_registration_not_open_message'),
             ];
         }
 
@@ -59,7 +59,7 @@ class BuildPublicParticipationCtaService
             return [
                 'visible' => true,
                 'status' => 'guest',
-                'message' => 'Log in or create an account to participate.',
+                'message' => __('competition.cta_guest_message'),
                 'login_url' => route('login'),
                 'register_url' => route('register'),
             ];
@@ -69,7 +69,7 @@ class BuildPublicParticipationCtaService
             return [
                 'visible' => true,
                 'status' => 'wrong_organization',
-                'message' => 'You must belong to '.$organization->name.' to participate in this competition.',
+                'message' => __('competition.cta_wrong_organization_message', ['organization' => $organization->name]),
             ];
         }
 
@@ -91,27 +91,27 @@ class BuildPublicParticipationCtaService
                 return [
                     'visible' => true,
                     'status' => 'view_team',
-                    'message' => 'You are already on a team for this competition.',
+                    'message' => __('competition.cta_view_team_message'),
                     'action_url' => route('teams.show', $team),
-                    'action_label' => 'View your team',
+                    'action_label' => __('competition.cta_view_team_action'),
                 ];
             }
 
             return [
                 'visible' => true,
                 'status' => 'join_team',
-                'message' => 'Join or create a team to participate.',
+                'message' => __('competition.cta_join_team_message'),
                 'action_url' => route('competitions.teams.index', $competition),
-                'action_label' => 'Join or create a team',
+                'action_label' => __('competition.cta_join_team_action'),
             ];
         }
 
         return [
             'visible' => true,
             'status' => 'browse',
-            'message' => 'Browse open competitions to get started.',
+            'message' => __('competition.cta_browse_message'),
             'action_url' => route('participant.competitions.index'),
-            'action_label' => 'Browse competitions',
+            'action_label' => __('competition.cta_browse_action'),
         ];
     }
 

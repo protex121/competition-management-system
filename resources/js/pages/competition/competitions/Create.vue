@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import RegistrationSettingsFields from '@/components/Competition/RegistrationSettingsFields.vue';
+import { useTranslation } from '@/composables/useTranslation';
 import { type BreadcrumbItem, type Organization } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
@@ -20,13 +21,14 @@ interface Props {
 
 defineProps<Props>();
 
+const { t } = useTranslation();
 const page = usePage();
 const isSuperAdmin = computed(() => page.props.auth.user?.role === 'super-admin');
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Competitions', href: route('competitions.index') },
-    { title: 'Create', href: route('competitions.create') },
-];
+const breadcrumbs = computed<BreadcrumbItem[]>(() => [
+    { title: t('nav.competitions'), href: route('competitions.index') },
+    { title: t('competition.create_breadcrumb'), href: route('competitions.create') },
+]);
 
 const form = useForm({
     organization_id: '' as string | number,
@@ -50,27 +52,27 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Create competition" />
+    <Head :title="t('competition.create_title')" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4">
-            <Heading title="Create competition" description="Set up a new competition for your organization" />
+            <Heading :title="t('competition.create_title')" :description="t('competition.create_description')" />
 
             <Card class="max-w-2xl">
                 <CardHeader>
-                    <CardTitle>Competition details</CardTitle>
+                    <CardTitle>{{ t('competition.competition_details') }}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <form @submit.prevent="submit" class="space-y-6">
                         <div v-if="isSuperAdmin" class="grid gap-2">
-                            <Label for="organization_id">Organization</Label>
+                            <Label for="organization_id">{{ t('competition.label_organization') }}</Label>
                             <select
                                 id="organization_id"
                                 v-model="form.organization_id"
                                 required
                                 class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
-                                <option value="" disabled>Select organization</option>
+                                <option value="" disabled>{{ t('competition.select_organization') }}</option>
                                 <option v-for="organization in organizations" :key="organization.id" :value="organization.id">
                                     {{ organization.name }}
                                 </option>
@@ -79,38 +81,38 @@ const submit = () => {
                         </div>
 
                         <div class="grid gap-2">
-                            <Label for="name">Name</Label>
-                            <Input id="name" v-model="form.name" required placeholder="Summer Hackathon 2026" />
+                            <Label for="name">{{ t('competition.label_name') }}</Label>
+                            <Input id="name" v-model="form.name" required :placeholder="t('competition.name_placeholder')" />
                             <InputError :message="form.errors.name" />
                         </div>
 
                         <div class="grid gap-2">
-                            <Label for="slug">Slug <span class="text-muted-foreground">(optional)</span></Label>
-                            <Input id="slug" v-model="form.slug" placeholder="summer-hackathon-2026" />
-                            <p class="text-xs text-muted-foreground">Leave blank to auto-generate from the name.</p>
+                            <Label for="slug">{{ t('competition.label_slug') }} <span class="text-muted-foreground">{{ t('competition.optional') }}</span></Label>
+                            <Input id="slug" v-model="form.slug" :placeholder="t('competition.slug_placeholder')" />
+                            <p class="text-xs text-muted-foreground">{{ t('competition.slug_help') }}</p>
                             <InputError :message="form.errors.slug" />
                         </div>
 
                         <div class="grid gap-2">
-                            <Label for="description">Description</Label>
+                            <Label for="description">{{ t('competition.label_description') }}</Label>
                             <textarea
                                 id="description"
                                 v-model="form.description"
                                 rows="4"
                                 class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                placeholder="Brief description of the event"
+                                :placeholder="t('competition.description_placeholder')"
                             />
                             <InputError :message="form.errors.description" />
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="grid gap-2">
-                                <Label for="starts_at">Event starts</Label>
+                                <Label for="starts_at">{{ t('competition.label_starts_at') }}</Label>
                                 <DateTimePicker id="starts_at" v-model="form.starts_at" />
                                 <InputError :message="form.errors.starts_at" />
                             </div>
                             <div class="grid gap-2">
-                                <Label for="ends_at">Event ends</Label>
+                                <Label for="ends_at">{{ t('competition.label_ends_at') }}</Label>
                                 <DateTimePicker id="ends_at" v-model="form.ends_at" />
                                 <InputError :message="form.errors.ends_at" />
                             </div>
@@ -118,25 +120,25 @@ const submit = () => {
 
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="grid gap-2">
-                                <Label for="registration_starts_at">Registration opens</Label>
+                                <Label for="registration_starts_at">{{ t('competition.label_registration_starts_at') }}</Label>
                                 <DateTimePicker id="registration_starts_at" v-model="form.registration_starts_at" />
                                 <InputError :message="form.errors.registration_starts_at" />
                             </div>
                             <div class="grid gap-2">
-                                <Label for="registration_ends_at">Registration closes</Label>
+                                <Label for="registration_ends_at">{{ t('competition.label_registration_ends_at') }}</Label>
                                 <DateTimePicker id="registration_ends_at" v-model="form.registration_ends_at" />
                                 <InputError :message="form.errors.registration_ends_at" />
                             </div>
                         </div>
 
                         <div class="grid gap-2">
-                            <Label for="max_participants">Max participants <span class="text-muted-foreground">(optional)</span></Label>
-                            <Input id="max_participants" v-model="form.max_participants" type="number" min="1" placeholder="100" />
+                            <Label for="max_participants">{{ t('competition.label_max_participants') }} <span class="text-muted-foreground">{{ t('competition.optional') }}</span></Label>
+                            <Input id="max_participants" v-model="form.max_participants" type="number" min="1" :placeholder="t('competition.max_participants_placeholder')" />
                             <InputError :message="form.errors.max_participants" />
                         </div>
 
                         <div class="border-t pt-6">
-                            <p class="mb-4 text-sm font-medium">Registration settings</p>
+                            <p class="mb-4 text-sm font-medium">{{ t('competition.registration_settings') }}</p>
                             <RegistrationSettingsFields
                                 v-model:registration-mode="form.registration_mode"
                                 v-model:min-team-size="form.min_team_size"
@@ -149,10 +151,10 @@ const submit = () => {
                         <div class="flex items-center gap-4">
                             <Button type="submit" :disabled="form.processing">
                                 <LoaderCircle v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
-                                Create competition
+                                {{ t('competition.create_button') }}
                             </Button>
                             <Button as-child variant="outline">
-                                <Link :href="route('competitions.index')">Cancel</Link>
+                                <Link :href="route('competitions.index')">{{ t('common.cancel') }}</Link>
                             </Button>
                             <TransitionRoot
                                 :show="form.recentlySuccessful"
@@ -161,7 +163,7 @@ const submit = () => {
                                 leave="transition ease-in-out"
                                 leave-to="opacity-0"
                             >
-                                <p class="text-sm text-muted-foreground">Created.</p>
+                                <p class="text-sm text-muted-foreground">{{ t('common.created') }}</p>
                             </TransitionRoot>
                         </div>
                     </form>

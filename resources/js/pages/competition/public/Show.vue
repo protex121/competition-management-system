@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/composables/useTranslation';
 import { type CompetitionCategory, type Organization } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
 
@@ -46,11 +47,9 @@ interface ParticipationCta {
 
 defineProps<Props>();
 
-const formatStatus = (status: string): string =>
-    status
-        .split('-')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+const { t } = useTranslation();
+
+const formatStatus = (status: string): string => t(`competition.status_${status}`);
 
 const formatDate = (value: string | null): string => {
     if (!value) {
@@ -66,11 +65,11 @@ const formatDate = (value: string | null): string => {
 const formatRegistrationMode = (mode: string): string => {
     switch (mode) {
         case 'team':
-            return 'Team registration';
+            return t('competition.registration_mode_team');
         case 'both':
-            return 'Individual or team registration';
+            return t('competition.registration_mode_both');
         default:
-            return 'Individual registration';
+            return t('competition.registration_mode_individual');
     }
 };
 
@@ -107,9 +106,9 @@ const statusClass = (status: string): string => {
                         :href="route('dashboard')"
                         class="text-sm text-muted-foreground hover:text-foreground"
                     >
-                        Dashboard
+                        {{ t('nav.dashboard') }}
                     </Link>
-                    <Link v-else :href="route('login')" class="text-sm text-muted-foreground hover:text-foreground"> Log in </Link>
+                    <Link v-else :href="route('login')" class="text-sm text-muted-foreground hover:text-foreground"> {{ t('common.log_in') }} </Link>
                 </div>
             </div>
         </header>
@@ -117,7 +116,7 @@ const statusClass = (status: string): string => {
         <main class="mx-auto flex max-w-3xl flex-col gap-6 p-4">
             <Card v-if="participation.visible">
                 <CardHeader>
-                    <CardTitle>Participate</CardTitle>
+                    <CardTitle>{{ t('competition.participate') }}</CardTitle>
                 </CardHeader>
                 <CardContent class="space-y-4">
                     <p v-if="participation.message" class="text-sm text-muted-foreground">{{ participation.message }}</p>
@@ -127,10 +126,10 @@ const statusClass = (status: string): string => {
                         </Button>
                         <template v-if="participation.status === 'guest'">
                             <Button v-if="participation.login_url" as-child variant="outline">
-                                <Link :href="participation.login_url">Log in</Link>
+                                <Link :href="participation.login_url">{{ t('common.log_in') }}</Link>
                             </Button>
                             <Button v-if="participation.register_url" as-child variant="secondary">
-                                <Link :href="participation.register_url">Register</Link>
+                                <Link :href="participation.register_url">{{ t('competition.register') }}</Link>
                             </Button>
                         </template>
                     </div>
@@ -139,16 +138,16 @@ const statusClass = (status: string): string => {
 
             <Card v-if="competition.status === 'closed'">
                 <CardContent class="flex items-center justify-between py-4">
-                    <p class="text-sm text-muted-foreground">This competition has closed. Results are now available.</p>
+                    <p class="text-sm text-muted-foreground">{{ t('competition.closed_results_description') }}</p>
                     <Button as-child variant="outline" size="sm">
-                        <Link :href="route('events.competitions.leaderboard', [organization.slug, competition.slug])">View leaderboard</Link>
+                        <Link :href="route('events.competitions.leaderboard', [organization.slug, competition.slug])">{{ t('competition.view_leaderboard') }}</Link>
                     </Button>
                 </CardContent>
             </Card>
 
             <Card v-if="competition.description">
                 <CardHeader>
-                    <CardTitle>About</CardTitle>
+                    <CardTitle>{{ t('competition.about') }}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <p class="whitespace-pre-wrap text-sm text-muted-foreground">{{ competition.description }}</p>
@@ -157,40 +156,40 @@ const statusClass = (status: string): string => {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Schedule</CardTitle>
+                    <CardTitle>{{ t('competition.schedule') }}</CardTitle>
                 </CardHeader>
                 <CardContent class="grid gap-3 text-sm sm:grid-cols-2">
                     <div>
-                        <p class="font-medium">Event</p>
+                        <p class="font-medium">{{ t('competition.event') }}</p>
                         <p class="text-muted-foreground">{{ formatDate(competition.starts_at) }} – {{ formatDate(competition.ends_at) }}</p>
                     </div>
                     <div>
-                        <p class="font-medium">Registration</p>
+                        <p class="font-medium">{{ t('competition.registration') }}</p>
                         <p class="text-muted-foreground">
                             {{ formatDate(competition.registration_starts_at) }} – {{ formatDate(competition.registration_ends_at) }}
                         </p>
                     </div>
                     <div>
-                        <p class="font-medium">Participation</p>
+                        <p class="font-medium">{{ t('competition.participation') }}</p>
                         <p class="text-muted-foreground">{{ formatRegistrationMode(competition.registration_mode) }}</p>
                         <p
                             v-if="competition.registration_mode === 'team' || competition.registration_mode === 'both'"
                             class="mt-1 text-muted-foreground"
                         >
-                            Team size: {{ competition.min_team_size ?? '?' }}–{{ competition.max_team_size ?? '?' }} members
-                            <span v-if="competition.requires_coach"> · Coach required</span>
+                            {{ t('competition.team_size_label', { min: competition.min_team_size ?? '?', max: competition.max_team_size ?? '?' }) }}
+                            <span v-if="competition.requires_coach"> · {{ t('competition.coach_required') }}</span>
                         </p>
                     </div>
                     <div v-if="competition.max_participants">
-                        <p class="font-medium">Capacity</p>
-                        <p class="text-muted-foreground">Up to {{ competition.max_participants }} participants</p>
+                        <p class="font-medium">{{ t('competition.capacity') }}</p>
+                        <p class="text-muted-foreground">{{ t('competition.up_to_participants', { count: competition.max_participants }) }}</p>
                     </div>
                 </CardContent>
             </Card>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>{{ competition.status === 'closed' ? 'Categories (archived)' : 'Categories' }}</CardTitle>
+                    <CardTitle>{{ competition.status === 'closed' ? t('competition.categories_archived') : t('competition.categories') }}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <ul v-if="categories.length" class="divide-y">
@@ -198,9 +197,9 @@ const statusClass = (status: string): string => {
                             <p class="font-medium">{{ category.name }}</p>
                             <p v-if="category.description" class="mt-1 text-sm text-muted-foreground">{{ category.description }}</p>
                             <div class="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
-                                <span v-if="category.max_participants">Max {{ category.max_participants }} participants</span>
+                                <span v-if="category.max_participants">{{ t('competition.category_max_participants', { count: category.max_participants }) }}</span>
                                 <span v-if="category.registration_ends_at">
-                                    Registration closes {{ formatDate(category.registration_ends_at) }}
+                                    {{ t('competition.category_registration_closes', { date: formatDate(category.registration_ends_at) }) }}
                                 </span>
                             </div>
                         </li>
@@ -208,8 +207,8 @@ const statusClass = (status: string): string => {
                     <p v-else class="text-sm text-muted-foreground">
                         {{
                             competition.status === 'closed'
-                                ? 'No category information available.'
-                                : 'No active categories yet. Check back soon.'
+                                ? t('competition.no_category_info')
+                                : t('competition.no_active_categories')
                         }}
                     </p>
                 </CardContent>

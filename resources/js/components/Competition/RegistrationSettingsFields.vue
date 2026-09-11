@@ -2,6 +2,7 @@
 import InputError from '@/components/InputError.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/composables/useTranslation';
 import { computed } from 'vue';
 
 const registrationMode = defineModel<string>('registrationMode', { required: true });
@@ -14,11 +15,13 @@ defineProps<{
     disabled?: boolean;
 }>();
 
-const registrationModes = [
-    { value: 'individual', label: 'Individual only' },
-    { value: 'team', label: 'Teams only' },
-    { value: 'both', label: 'Individual & teams' },
-];
+const { t } = useTranslation();
+
+const registrationModes = computed(() => [
+    { value: 'individual', label: t('competition.mode_individual') },
+    { value: 'team', label: t('competition.mode_team') },
+    { value: 'both', label: t('competition.mode_both') },
+]);
 
 const showTeamSizes = computed(
     () => registrationMode.value === 'team' || registrationMode.value === 'both',
@@ -28,7 +31,7 @@ const showTeamSizes = computed(
 <template>
     <div class="space-y-6">
         <div class="grid gap-2">
-            <Label for="registration_mode">Participation mode</Label>
+            <Label for="registration_mode">{{ t('competition.participation_mode') }}</Label>
             <select
                 id="registration_mode"
                 v-model="registrationMode"
@@ -44,7 +47,7 @@ const showTeamSizes = computed(
 
         <div v-if="showTeamSizes" class="grid gap-4 sm:grid-cols-2">
             <div class="grid gap-2">
-                <Label for="min_team_size">Min team size</Label>
+                <Label for="min_team_size">{{ t('competition.min_team_size') }}</Label>
                 <Input
                     id="min_team_size"
                     v-model="minTeamSize"
@@ -56,7 +59,7 @@ const showTeamSizes = computed(
                 <InputError :message="errors.min_team_size" />
             </div>
             <div class="grid gap-2">
-                <Label for="max_team_size">Max team size</Label>
+                <Label for="max_team_size">{{ t('competition.max_team_size') }}</Label>
                 <Input
                     id="max_team_size"
                     v-model="maxTeamSize"
@@ -77,7 +80,7 @@ const showTeamSizes = computed(
                 :disabled="disabled"
                 class="h-4 w-4 rounded border-input"
             />
-            <Label for="requires_coach" class="font-normal">Require a coach on each team</Label>
+            <Label for="requires_coach" class="font-normal">{{ t('competition.requires_coach') }}</Label>
             <InputError :message="errors.requires_coach" />
         </div>
     </div>

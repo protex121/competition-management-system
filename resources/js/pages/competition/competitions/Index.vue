@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem, type Competition, type Organization, type PaginatedCompetitions } from '@/types';
+import { useTranslation } from '@/composables/useTranslation';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
 import { computed } from 'vue';
@@ -15,18 +16,15 @@ interface Props {
 
 defineProps<Props>();
 
+const { t } = useTranslation();
 const page = usePage();
 const isSuperAdmin = computed(() => page.props.auth.user?.role === 'super-admin');
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Competitions', href: route('competitions.index') },
-];
+const breadcrumbs = computed<BreadcrumbItem[]>(() => [
+    { title: t('nav.competitions'), href: route('competitions.index') },
+]);
 
-const formatStatus = (status: string): string =>
-    status
-        .split('-')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+const formatStatus = (status: string): string => t(`competition.status_${status}`);
 
 const statusClass = (status: string): string => {
     switch (status) {
@@ -45,17 +43,17 @@ const organizationName = (organization: Organization | null | undefined): string
 </script>
 
 <template>
-    <Head title="Competitions" />
+    <Head :title="t('nav.competitions')" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4">
             <div class="mb-8">
                 <div class="flex items-start justify-between gap-4">
-                    <Heading title="Competitions" description="Manage competitions in your organization" :show-separator="false" />
+                    <Heading :title="t('nav.competitions')" :description="t('competition.index_description')" :show-separator="false" />
                     <Button as-child class="shrink-0">
                         <Link :href="route('competitions.create')">
                             <Plus class="mr-2 h-4 w-4" />
-                            New competition
+                            {{ t('competition.new_competition') }}
                         </Link>
                     </Button>
                 </div>
@@ -64,18 +62,18 @@ const organizationName = (organization: Organization | null | undefined): string
 
             <Card>
                 <CardHeader>
-                    <CardTitle>All competitions</CardTitle>
+                    <CardTitle>{{ t('competition.all_competitions') }}</CardTitle>
                 </CardHeader>
                 <CardContent class="p-0">
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="border-b text-left text-muted-foreground">
-                                    <th class="px-6 py-3 font-medium">Name</th>
-                                    <th class="px-6 py-3 font-medium">Slug</th>
-                                    <th class="px-6 py-3 font-medium">Status</th>
-                                    <th v-if="isSuperAdmin" class="px-6 py-3 font-medium">Organization</th>
-                                    <th class="px-6 py-3 font-medium text-right">Actions</th>
+                                    <th class="px-6 py-3 font-medium">{{ t('competition.th_name') }}</th>
+                                    <th class="px-6 py-3 font-medium">{{ t('competition.th_slug') }}</th>
+                                    <th class="px-6 py-3 font-medium">{{ t('competition.th_status') }}</th>
+                                    <th v-if="isSuperAdmin" class="px-6 py-3 font-medium">{{ t('competition.th_organization') }}</th>
+                                    <th class="px-6 py-3 font-medium text-right">{{ t('competition.th_actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -95,13 +93,13 @@ const organizationName = (organization: Organization | null | undefined): string
                                     </td>
                                     <td class="px-6 py-4 text-right">
                                         <Button as-child variant="outline" size="sm">
-                                            <Link :href="route('competitions.edit', competition.id)">Edit</Link>
+                                            <Link :href="route('competitions.edit', competition.id)">{{ t('common.edit') }}</Link>
                                         </Button>
                                     </td>
                                 </tr>
                                 <tr v-if="competitions.data.length === 0">
                                     <td :colspan="isSuperAdmin ? 5 : 4" class="px-6 py-8 text-center text-muted-foreground">
-                                        No competitions yet. Create your first one.
+                                        {{ t('competition.empty_competitions') }}
                                     </td>
                                 </tr>
                             </tbody>
