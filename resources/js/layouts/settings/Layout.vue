@@ -2,30 +2,35 @@
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { useTranslation } from '@/composables/useTranslation';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
-const sidebarNavItems: NavItem[] = [
-    {
-        title: 'Profile',
-        href: '/settings/profile',
-    },
-    {
-        title: 'Password',
-        href: '/settings/password',
-    },
-    {
-        title: 'Appearance',
-        href: '/settings/appearance',
-    },
-];
+const { t } = useTranslation();
 
-const currentPath = window.location.pathname;
+const sidebarNavItems = computed<(NavItem & { routeName: string })[]>(() => [
+    {
+        title: t('settings_ui.nav_profile'),
+        href: route('profile.edit'),
+        routeName: 'profile.edit',
+    },
+    {
+        title: t('settings_ui.nav_password'),
+        href: route('password.edit'),
+        routeName: 'password.edit',
+    },
+    {
+        title: t('settings_ui.nav_appearance'),
+        href: route('appearance'),
+        routeName: 'appearance',
+    },
+]);
 </script>
 
 <template>
     <div class="px-4 py-6">
-        <Heading title="Settings" description="Manage your profile and account settings" />
+        <Heading :title="t('settings_ui.title')" :description="t('settings_ui.description')" />
 
         <div class="flex flex-col space-y-8 md:space-y-0 lg:flex-row lg:space-x-12 lg:space-y-0">
             <aside class="w-full max-w-xl lg:w-48">
@@ -34,7 +39,7 @@ const currentPath = window.location.pathname;
                         v-for="item in sidebarNavItems"
                         :key="item.href"
                         variant="ghost"
-                        :class="['w-full justify-start', { 'bg-muted': currentPath === item.href }]"
+                        :class="['w-full justify-start', { 'bg-muted': route().current(item.routeName) }]"
                         as-child
                     >
                         <Link :href="item.href">

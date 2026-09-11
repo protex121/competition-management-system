@@ -22,7 +22,7 @@ class AvatarUploadTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->post('/settings/profile/avatar', [
+            ->post(route('profile.avatar.update'), [
                 'avatar' => UploadedFile::fake()->image('avatar.jpg', 300, 300),
             ]);
 
@@ -40,13 +40,13 @@ class AvatarUploadTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->actingAs($user)->post('/settings/profile/avatar', [
+        $this->actingAs($user)->post(route('profile.avatar.update'), [
             'avatar' => UploadedFile::fake()->image('first.jpg', 300, 300),
         ]);
 
         $firstPath = $user->refresh()->avatar_path;
 
-        $this->actingAs($user)->post('/settings/profile/avatar', [
+        $this->actingAs($user)->post(route('profile.avatar.update'), [
             'avatar' => UploadedFile::fake()->image('second.jpg', 300, 300),
         ]);
 
@@ -65,7 +65,7 @@ class AvatarUploadTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->post('/settings/profile/avatar', [
+            ->post(route('profile.avatar.update'), [
                 'avatar' => UploadedFile::fake()->create('malware.pdf', 100, 'application/pdf'),
             ]);
 
@@ -81,7 +81,7 @@ class AvatarUploadTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->post('/settings/profile/avatar', [
+            ->post(route('profile.avatar.update'), [
                 'avatar' => UploadedFile::fake()->image('huge.jpg', 300, 300)->size(3000),
             ]);
 

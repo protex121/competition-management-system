@@ -22,6 +22,9 @@ export interface SharedData {
     quote: { message: string; author: string };
     auth: Auth;
     pendingInvitationsCount?: number;
+    locale: string;
+    availableLocales: Record<string, string>;
+    translations: Record<string, Record<string, unknown>>;
     ziggy: {
         location: string;
         url: string;
