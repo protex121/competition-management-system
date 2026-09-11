@@ -258,6 +258,15 @@ This log captures significant decisions, their context, and their consequences. 
 
 ---
 
+## ADR-0029 — Leaderboard computed once on close via a queued job; zero-score submissions excluded
+
+- **Status:** Accepted
+- **Context:** Sprint 7 aggregates `scores` into a per-category ranking. Scores are already frozen once a competition closes (ADR-0028), so there is no scenario where a leaderboard would need recomputing after its one authoritative run. The app has one existing `Event` (`CompetitionPublished`) but zero queued `Job`s so far — this is the first.
+- **Decision:** `CloseCompetitionService` dispatches a new `CompetitionClosed` event (mirroring `CompetitionPublished`) after its transaction commits; an auto-discovered listener dispatches `CalculateLeaderboardJob` (`ShouldQueue`), which computes and persists `leaderboard_entries` per category — delete-then-bulk-insert, not upsert, since this only ever runs once. Aggregate score per submission = average of each judge's summed per-criterion total (every judge submits a full scorecard, so this is equivalent to per-criterion averaging but cheaper). Rank is sequential, tiebroken by `submitted_at` ascending. A finalized submission with **zero** scores gets no row — it is excluded from the leaderboard entirely rather than shown unranked. There is no organizer preview or manual recalculation before close. The job and its service do **not** use the `background_mode` container flag already present (but never bound anywhere) in every org-scope class; they instead use the same explicit `withoutGlobalScope(...)`/`withoutGlobalScopes()` bypass already proven throughout the codebase, to avoid relying on unverified global mutable state inside a long-running queue worker process.
+- **Consequences:** `leaderboard_entries` reuses `RegistrationOrganizationScope` as-is (already parameterized by FK name, matching its `competition_category_id` column) — no new scope class. The public leaderboard route is gated purely by `Competition::isClosed()`, the same visibility pattern `ShowPublicCompetitionService` already uses for categories. If a future sprint needs mid-competition standings or re-ranking after a scoring correction, this ADR's "compute once" premise must be revisited.
+
+---
+
 ## Superseded / historical notes
 
 - Early roadmap drafts assumed `spatie/laravel-permission` and invite-only registration for Sprint 1. Both were changed before implementation: roles are a PHP enum (ADR-0006) and self-serve organization signup is enabled (see [ROADMAP.md](ROADMAP.md)). Invite flow is deferred.
