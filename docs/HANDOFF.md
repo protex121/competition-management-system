@@ -1,8 +1,8 @@
 # Development Handoff
 
 **Last updated:** 2026-09-11  
-**Scope:** Sprint 0 through Sprint 6.  
-**Does not cover:** Sprint 7 and beyond — not started.
+**Scope:** Sprint 0 through Sprint 7 — MVP complete.  
+**Does not cover:** Post-MVP items (see `docs/ROADMAP.md`'s "Future" section) — not started.
 
 Use this document when switching AI assistants (Claude, Cursor, etc.) or onboarding a new developer. The repository and `docs/` folder are the source of truth; this file summarizes **current state** and **how we work**.
 
@@ -16,8 +16,8 @@ Use this document when switching AI assistants (Claude, Cursor, etc.) or onboard
 | GitHub | [protex121/competition-management-system](https://github.com/protex121/competition-management-system) |
 | Integration branch | `develop` |
 | Production branch | `main` |
-| Latest milestone | Sprint 6 (Judging & Scoring) merged to `develop` |
-| Tests | **349 passing** (`php artisan test`) |
+| Latest milestone | Sprint 7 (Leaderboard & Results) merged to `develop` — **MVP complete** |
+| Tests | **360 passing** (`php artisan test`) |
 
 ---
 
@@ -109,6 +109,7 @@ Seed super admin: `php artisan db:seed --class=SuperAdminSeeder`
 | Sprint 4 | `docs/REGISTRATION_DESIGN.md` | Registration module design (ADR-0023/0024) |
 | Sprint 5 | `docs/SUBMISSION_DESIGN.md` | Submission module design (ADR-0025/0026) |
 | Sprint 6 | `docs/JUDGING_DESIGN.md` | Judging module design (ADR-0027/0028) |
+| Sprint 7 | `docs/LEADERBOARD_DESIGN.md` | Leaderboard module design (ADR-0029) |
 
 ---
 
@@ -225,6 +226,23 @@ Delivered:
 
 **Issues:** #86, #88, #90, #92 (see `docs/ROADMAP.md` Sprint 6 checklist).
 
+### Sprint 7 — Leaderboard & results ✅
+
+**Boundary:** Leaderboard computation happens **exactly once**, when a competition closes — no organizer preview and no recomputation after (scores are already frozen at close per ADR-0028, so one authoritative run is enough). A finalized submission with zero scores gets no leaderboard row at all — it's excluded, not shown unranked. This is the **last MVP sprint** — the full lifecycle `create → publish → register → submit → judge → rank` is now complete.
+
+Delivered:
+
+| Area | Highlights |
+|------|------------|
+| Foundation | `leaderboard_entries` table; `LeaderboardEntry` model reuses `RegistrationOrganizationScope` as-is (already parameterized by FK name — no new scope class); `CompetitionClosed` event (mirrors `CompetitionPublished`), dispatched from `CloseCompetitionService` after its transaction commits |
+| Calculation | `CalculateLeaderboardJob` — **the app's first real queued job**; `DispatchLeaderboardCalculation` listener (auto-discovered, no manual provider registration); `CalculateCategoryLeaderboardService` — per-category aggregate = average of each judge's summed per-criterion score, zero-score submissions excluded, rank by aggregate desc / `submitted_at` asc tiebreak, delete-then-bulk-insert |
+| Public page | `ShowPublicLeaderboardService` (same guest-access pattern as `ShowPublicCompetitionService`, 404s unless the competition is closed), `PublicLeaderboardController`, `routes/leaderboard.php` |
+| UI | `leaderboard/Show.vue` (ranked table per category), "View leaderboard" link on the public competition page and organizer Competition Edit once closed |
+
+**Issues:** #94, #96, #98, #100 (see `docs/ROADMAP.md` Sprint 7 checklist).
+
+**Note on `background_mode`:** every org-scope class (`OrganizationScope`, `CompetitionOrganizationScope`, `RegistrationOrganizationScope`, `SubmissionOrganizationScope`, `ScoreOrganizationScope`) contains a leftover `background_mode` container-flag early-exit that is never bound or exercised anywhere — an unused, unverified hook. `CalculateLeaderboardJob`/its services deliberately do **not** use it; they use the same explicit `withoutGlobalScope(...)`/`withoutGlobalScopes()` bypass already proven throughout the codebase. If a future sprint wants to actually wire up `background_mode`, treat it as new, unreviewed surface area — verify it first rather than assuming it works.
+
 ---
 
 ## Route map (current)
@@ -240,6 +258,7 @@ routes/teams.php        → teams, invitations, approval, membership, coach
 routes/registrations.php → registration store (individual/team), withdraw, organizer review
 routes/submissions.php  → submission upsert, file upload/download, finalize, organizer review
 routes/judging.php      → judge assignment, rubric criteria, judge queue, scoring
+routes/leaderboard.php  → public leaderboard page
 routes/events.php       → public competition page (guest + auth)
 ```
 
@@ -268,6 +287,8 @@ routes/events.php       → public competition page (guest + auth)
 | `submissions.score.edit` | `/submissions/{submission}/score` | Assigned judge |
 | `competitions.judges.store` | `/competitions/{id}/judges` (POST) | Organizer |
 | `competitions.rubric-criteria.store` | `/competitions/{id}/rubric-criteria` (POST) | Organizer |
+| `competitions.close` | `/competitions/{competition}/close` (PATCH) | Organizer |
+| `events.competitions.leaderboard` | `/events/{org}/{competition}/leaderboard` | Public (after close) |
 
 ---
 
@@ -281,7 +302,8 @@ app/Http/Controllers/
 ├── Team/              → Team, TeamMember, TeamCoach, TeamInvitation, TeamApproval, ParticipantProfile
 ├── Registration/      → RegistrationController
 ├── Submission/        → SubmissionController
-└── Judging/           → CompetitionJudgeController, RubricCriterionController, ScoreController
+├── Judging/           → CompetitionJudgeController, RubricCriterionController, ScoreController
+└── Leaderboard/       → PublicLeaderboardController
 
 app/Services/
 ├── Identity/
@@ -289,7 +311,8 @@ app/Services/
 ├── Team/
 ├── Registration/      → EffectiveCategoryConfig, Register*Service, ListRegistrationsService, ...
 ├── Submission/        → Upsert/Upload/FinalizeSubmissionService, ListSubmissionsService
-└── Judging/           → Assign/RemoveJudgeService, Rubric criterion CRUD, SubmitScoreService, ListJudgeQueueService
+├── Judging/           → Assign/RemoveJudgeService, Rubric criterion CRUD, SubmitScoreService, ListJudgeQueueService
+└── Leaderboard/       → CalculateCategoryLeaderboardService, ShowPublicLeaderboardService
 
 app/Policies/
 ├── Identity/
@@ -298,6 +321,15 @@ app/Policies/
 ├── Registration/      → RegistrationPolicy
 ├── Submission/        → SubmissionPolicy
 └── Judging/            → CompetitionJudgePolicy, RubricPolicy, ScorePolicy
+
+app/Jobs/
+└── Leaderboard/       → CalculateLeaderboardJob (the app's first real queued job)
+
+app/Listeners/
+└── Leaderboard/       → DispatchLeaderboardCalculation (on CompetitionClosed)
+
+app/Events/
+└── Competition/       → CompetitionPublished, CompetitionClosed
 
 app/Notifications/
 └── Registration/      → RegistrationConfirmed (database channel; project's first Notification)
@@ -310,7 +342,8 @@ resources/js/pages/
 ├── team/                       → teams, invitations
 ├── registration/registrations/ → My Registrations, organizer Review
 ├── submission/                 → participant Edit, organizer Review
-└── judging/                    → judge Queue, ScoreSubmission
+├── judging/                    → judge Queue, ScoreSubmission
+└── leaderboard/                → public Show
 ```
 
 ---
@@ -334,7 +367,7 @@ resources/js/pages/
 | Status field | `PVTSSF_lAHOAlhBfs4BcglOzhXI1Ts` |
 | Done option ID | `98236657` |
 
-Issues #62–#66, #72–#78, #80–#84, and #86–#92 are closed and marked **Done** on the board. Sprint 4/5/6 issues/PRs are attached to their sprint milestone (`Sprint 4 - Registration Management`, `Sprint 5 - Submissions`, `Sprint 6 - Judge & Scoring System`) — going forward, attach new issues/PRs to their sprint milestone (prior sprints did not do this consistently, and milestones #8+ may still be mistitled relative to `ROADMAP.md` — verify before use, see the Sprint 6 note above).
+Issues #62–#66, #72–#78, #80–#84, #86–#92, and #94–#100 are closed and marked **Done** on the board. Sprint 4/5/6/7 issues/PRs are attached to their sprint milestone (`Sprint 4 - Registration Management`, `Sprint 5 - Submissions`, `Sprint 6 - Judge & Scoring System`, `Sprint 7 - Leaderboard & Results`) — going forward, attach new issues/PRs to their sprint milestone (prior sprints did not do this consistently, and milestones #9+ have not been checked against `ROADMAP.md`'s Post-MVP list — verify before use, same as the Sprint 5/6 milestone-rename note above).
 
 ---
 
@@ -370,6 +403,16 @@ Issues #62–#66, #72–#78, #80–#84, and #86–#92 are closed and marked **Do
 
 1. Visit `/events/{org-slug}/{competition-slug}`
 2. **Participate** card: guest sees login/register; participant sees join/view team
+3. Once the organizer closes the competition, a **View leaderboard** card appears — links to `/events/{org-slug}/{competition-slug}/leaderboard`, ranked table per category (rank, registrant, type, score, judge count). Visiting the leaderboard URL directly before close returns 404.
+
+### Full lifecycle (register → submit → judge → rank)
+
+1. Organizer: create competition, publish, activate; assign a judge; add rubric criteria
+2. Participant: register (individual or team), fill and finalize a submission
+3. Judge: score the finalized submission from **Judging Queue**
+4. Organizer: **Close** the competition (Competition Edit → Close button)
+5. Wait a moment for the queued job (`composer dev` runs `queue:listen`, so this is near-instant locally; a submission with zero scores will simply never appear)
+6. Visit the public leaderboard — ranked entries should reflect the scores submitted in step 3
 
 ---
 
@@ -383,8 +426,11 @@ These were deferred by design — **do not implement without a new sprint/issue*
 - Multiple files or file versioning per submission (one optional file, replaced in place — Sprint 5)
 - Committee role (enum exists, features not built); judge role now has real features (Sprint 6)
 - Organizer un-finalizing/reopening a locked scorecard (scores stay editable by the judge until the competition closes, per ADR-0028 — no admin override this sprint)
-- Score aggregation, weighting, rankings, leaderboards, payments (Sprint 7+)
 - Per-category rubrics (one rubric per competition — ADR-0027)
+- Results export / CSV (`ROADMAP.md` marked it explicitly optional — deferred, ADR-0029)
+- Organizer leaderboard preview or manual recalculation before close (leaderboard is computed exactly once, on close — ADR-0029)
+- Per-criterion score breakdown on the public leaderboard (aggregate score + judge count only, to avoid exposing individual judge scoring publicly)
+- Payments, org branding, real email delivery, real-time leaderboard updates, 2FA, mobile API, audit logging (all Post-MVP — see `docs/ROADMAP.md`'s "Future" section)
 - JSON API (Inertia only for now; see `docs/API_GUIDELINES.md`)
 
 ---
@@ -399,8 +445,10 @@ Read first:
 2. PROJECT_RULES.md
 3. docs/ROADMAP.md
 
-Current state: Sprint 0–6 complete (through Judging & Scoring, #86–#92).
-349 tests passing. Do NOT start Sprint 7 unless I explicitly ask.
+Current state: Sprint 0–7 complete — MVP done (through Leaderboard & Results, #94–#100).
+360 tests passing. Sprint 7 was the last MVP sprint; anything further is
+Post-MVP (see docs/ROADMAP.md's "Future" section) — do NOT start Post-MVP
+work unless I explicitly ask.
 
 Workflow: one GitHub issue at a time, PR per issue, run tests before merge.
 
@@ -410,7 +458,16 @@ My task for this session:
 
 ---
 
-## Recent merge history (Sprint 6 — Judging & Scoring)
+## Recent merge history (Sprint 7 — Leaderboard & Results)
+
+```
+PR #95  feat(leaderboard): foundation - migration, model, CompetitionClosed event (#94)
+PR #97  feat(leaderboard): calculation - queued job, listener, compute service (#96)
+PR #99  feat(leaderboard): public page backend - service, controller, route (#98)
+PR #101 feat(leaderboard): UI - public page, links, docs closeout (#100)
+```
+
+### Sprint 6 — Judging & Scoring
 
 ```
 PR #87  feat(judging): foundation - models, migrations, policies, ScoreOrganizationScope (#86)
@@ -452,4 +509,4 @@ For full history: `git log develop --oneline` or GitHub PR list.
 
 ## What comes next (not started — do not implement from this doc)
 
-Sprint 7 — **Leaderboard & Results** is planned in `docs/ROADMAP.md` but **not implemented**. Start only when the owner prompts with explicit Sprint 7 requirements and issues. Note: GitHub milestone #8 onward has not been verified against `ROADMAP.md`'s later sprints — check before attaching issues to any of them (see the Sprint 6 milestone note above).
+**The MVP is complete as of Sprint 7.** Everything in `docs/ROADMAP.md`'s Sprint 0–7 checklists is implemented and merged. Anything further is **Post-MVP** (`docs/ROADMAP.md`'s "Future" table: billing/subscriptions, org branding, real email delivery, real-time leaderboard, 2FA, mobile API, audit logging, PHP 8.4/Tailwind v4 upgrades) — none of it is planned into sprints or issues yet. Start only when the owner prompts with explicit requirements and scope for a specific Post-MVP item. Note: GitHub milestones #9 onward (Dashboard & Reporting, Notification & Background Jobs, Certificate & Verification, REST API, Testing/Refactoring, Deployment) have not been verified against `ROADMAP.md`'s Post-MVP list — check before attaching any future issue to one of them (see the Sprint 5/6 milestone-rename notes above).

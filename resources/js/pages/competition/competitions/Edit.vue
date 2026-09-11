@@ -284,6 +284,20 @@ const statusClass = (status: string): string => {
                 </CardContent>
             </Card>
 
+            <Card v-if="competition.status === 'closed' && competition.organization" class="max-w-2xl">
+                <CardHeader>
+                    <CardTitle>Leaderboard</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p class="mb-4 text-sm text-muted-foreground">This competition has closed. Rankings have been computed.</p>
+                    <Button as-child variant="outline">
+                        <Link :href="route('events.competitions.leaderboard', [competition.organization.slug, competition.slug])">
+                            View leaderboard
+                        </Link>
+                    </Button>
+                </CardContent>
+            </Card>
+
             <Card v-if="can.reviewTeams" class="max-w-2xl">
                 <CardHeader>
                     <CardTitle>Teams</CardTitle>

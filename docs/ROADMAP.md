@@ -6,7 +6,7 @@ A multi-tenant SaaS platform where organizations run hackathon-style competition
 
 Designed as a portfolio project demonstrating real-world Laravel engineering — not just CRUD.
 
-> **Handoff / current state:** [HANDOFF.md](HANDOFF.md) (through Sprint 6).
+> **Handoff / current state:** [HANDOFF.md](HANDOFF.md) (through Sprint 7 — MVP complete).
 
 ## Domain
 
@@ -205,18 +205,22 @@ See [SPRINT3_UX_CLOSURE.md](SPRINT3_UX_CLOSURE.md).
 
 ---
 
-## Sprint 7 — Leaderboard & Results
+## Sprint 7 — Leaderboard & Results ✅
 
 **Goal:** Scores aggregate into rankings. Results are publishable.
 
+**Design doc:** ✅ [LEADERBOARD_DESIGN.md](LEADERBOARD_DESIGN.md) — ADR-0029 in [DECISIONS.md](DECISIONS.md)
+
 ### Features
 
-- [ ] `CalculateLeaderboardJob` (queued)
-- [ ] Leaderboard computation service
-- [ ] Public leaderboard page
-- [ ] Results export (optional)
-- [ ] `CompetitionClosed` event
-- [ ] Feature tests
+- [x] `CalculateLeaderboardJob` (queued) — the app's first real queued job ([#96](https://github.com/protex121/competition-management-system/issues/96))
+- [x] Leaderboard computation service — per-category, average of each judge's summed score, zero-score submissions excluded ([#96](https://github.com/protex121/competition-management-system/issues/96))
+- [x] Public leaderboard page ([#100](https://github.com/protex121/competition-management-system/issues/100))
+- [ ] Results export — deferred (marked optional; documented as an intentional gap)
+- [x] `CompetitionClosed` event ([#94](https://github.com/protex121/competition-management-system/issues/94))
+- [x] Feature tests ([#94](https://github.com/protex121/competition-management-system/issues/94), [#96](https://github.com/protex121/competition-management-system/issues/96), [#98](https://github.com/protex121/competition-management-system/issues/98))
+
+This is the last MVP sprint — the full lifecycle `create → publish → register → submit → judge → rank` is complete. See [Future (Post-MVP)](#future-post-mvp) for what's next.
 
 ---
 
